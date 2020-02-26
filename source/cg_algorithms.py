@@ -116,7 +116,6 @@ def draw_polygon(p_list, algorithm):
     result = []
     for i in range(len(p_list)):
         line = draw_line([p_list[i - 1], p_list[i]], algorithm)
-        print([p_list[i - 1], p_list[i]])
         result += line
     return result
 
@@ -127,7 +126,39 @@ def draw_ellipse(p_list):
     :param p_list: (list of list of int: [[x0, y0], [x1, y1]]) 椭圆的矩形包围框左上角和右下角顶点坐标
     :return: (list of list of int: [[x_0, y_0], [x_1, y_1], [x_2, y_2], ...]) 绘制结果的像素点坐标列表
     """
-    pass
+    result = []
+    x0, y0, x1, y1 = p_list[0][0], p_list[0][1], p_list[1][0], p_list[1][1],
+    cx, cy = (x0 + x1) / 2, (y0 + y1) / 2
+    rx, ry = abs(x1 - x0) / 2, abs(y1 - y0) / 2
+    print(cx, cy, rx, ry)
+    # 椭圆方程为 (x - cx)^2 / rx^2 + (y - cy)^2 / ry^2 = 1 (无论焦点在x轴y轴)
+    x, y = 0, ry
+    result.append([int(cx + x), int(cy + y)])
+    p1 = ry * ry - rx * rx * ry + rx * rx / 4
+    while rx * rx * y > ry * ry * x:
+        if p1 < 0:
+            x, y = x + 1, y
+            p1 = p1 + 2 * ry * ry * x + ry * ry
+        else:
+            x, y = x + 1, y - 1
+            p1 = p1 + 2 * ry * ry * x - 2 * rx * rx * y + ry * ry
+        result.append([int(cx + x), int(cy + y)])
+        result.append([int(cx - x), int(cy + y)])
+        result.append([int(cx + x), int(cy - y)])
+        result.append([int(cx - x), int(cy - y)])
+    p2 = ry * ry * (x + 1/2) * (x + 1/2) + rx * rx * (y - 1) * (y - 1) - rx * rx * ry * ry
+    while y > 0:
+        if p2 > 0:
+            x, y = x, y - 1
+            p2 = p2 - 2 * rx * rx * y + rx * rx
+        else:
+            x, y = x + 1, y - 1
+            p2 = p2 + 2 * ry * ry * x - 2 * rx * rx * y + rx * rx
+        result.append([int(cx + x), int(cy + y)])
+        result.append([int(cx - x), int(cy + y)])
+        result.append([int(cx + x), int(cy - y)])
+        result.append([int(cx - x), int(cy - y)])
+    return result
 
 
 def draw_curve(p_list, algorithm):

@@ -2,6 +2,11 @@ resetCanvas 600 500
 
 setcolor 255 0 0
 
-drawPolygon Poly1 50 50 400 100 100 400 Bresenham
+drawPolygon Poly1 0 0 0 400 300 400 300 0 DDA
 
-saveCanvas Bresenham
+drawEllipse Ellipse1 0 0 300 400
+
+drawLine Line1 150 0 150 400 DDA
+drawLine Line2 0 200 300 200 DDA
+
+saveCanvas ellipse
