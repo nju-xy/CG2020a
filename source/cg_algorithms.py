@@ -56,16 +56,15 @@ def draw_line(p_list, algorithm):
         elif dy == 0:
             for x in range(min(x0, x1), max(x0, x1) + 1):
                 result.append([x, y0])
-        elif dx == dy:
+        elif dx == dy:  # 对角线
             if x0 > x1:
                 x0, y0, x1, y1 = x1, y1, x0, y0
+            if y0 < y1:
+                uy = 1
+            else:
+                uy = -1
             for x in range(0, dx + 1):
-                result.append([x0 + x, y0 + x])
-        elif dx == - dy:
-            if x0 > x1:
-                x0, y0, x1, y1 = x1, y1, x0, y0
-            for x in range(0, dx + 1):
-                result.append([x0 + x, y0 - x])
+                result.append([x0 + x, y0 + uy * x])
         elif dy < dx:  # |m| < 1
             dx2, dy2 = 2 * dx, 2 * dy
             if x0 > x1:
@@ -117,6 +116,7 @@ def draw_polygon(p_list, algorithm):
     result = []
     for i in range(len(p_list)):
         line = draw_line([p_list[i - 1], p_list[i]], algorithm)
+        print([p_list[i - 1], p_list[i]])
         result += line
     return result
 
