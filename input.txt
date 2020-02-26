@@ -9,4 +9,6 @@ drawEllipse Ellipse1 0 0 300 400
 drawLine Line1 150 0 150 400 DDA
 drawLine Line2 0 200 300 200 DDA
 
+translate Ellipse1 10 80
+
 saveCanvas ellipse

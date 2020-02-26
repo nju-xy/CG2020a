@@ -130,7 +130,7 @@ def draw_ellipse(p_list):
     x0, y0, x1, y1 = p_list[0][0], p_list[0][1], p_list[1][0], p_list[1][1],
     cx, cy = (x0 + x1) / 2, (y0 + y1) / 2
     rx, ry = abs(x1 - x0) / 2, abs(y1 - y0) / 2
-    print(cx, cy, rx, ry)
+    # print(cx, cy, rx, ry)
     # 椭圆方程为 (x - cx)^2 / rx^2 + (y - cy)^2 / ry^2 = 1 (无论焦点在x轴y轴)
     x, y = 0, ry
     result.append([int(cx + x), int(cy + y)])
@@ -168,7 +168,13 @@ def draw_curve(p_list, algorithm):
     :param algorithm: (string) 绘制使用的算法，包括'Bezier'和'B-spline'（三次均匀B样条曲线，曲线不必经过首末控制点）
     :return: (list of list of int: [[x_0, y_0], [x_1, y_1], [x_2, y_2], ...]) 绘制结果的像素点坐标列表
     """
-    pass
+    # result = []
+    # if algorithm == 'Bezier':
+    #     for i in range(len(p_list)):
+    #
+    # elif algorithm == 'B-spline':
+    # return result
+
 
 
 def translate(p_list, dx, dy):
@@ -179,7 +185,11 @@ def translate(p_list, dx, dy):
     :param dy: (int) 垂直方向平移量
     :return: (list of list of int: [[x_0, y_0], [x_1, y_1], [x_2, y_2], ...]) 变换后的图元参数
     """
-    pass
+    result = []
+    for [x, y] in p_list:
+        x, y = x + dx, y + dy
+        result.append([x, y])
+    return result
 
 
 def rotate(p_list, x, y, r):

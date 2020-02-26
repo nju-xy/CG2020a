@@ -43,7 +43,9 @@ if __name__ == '__main__':
                         for x, y in pixels:
                             canvas[y, x] = color
                     elif item_type == 'curve':
-                        pass
+                        pixels = alg.draw_curve(p_list, algorithm)
+                        for x, y in pixels:
+                            canvas[y, x] = color
                 Image.fromarray(canvas).save(os.path.join(output_dir, save_name + '.bmp'), 'bmp')
             elif line[0] == 'setColor':
                 pen_color[0] = int(line[1])
@@ -77,6 +79,25 @@ if __name__ == '__main__':
                 x1 = int(line[4])
                 y1 = int(line[5])
                 item_dict[item_id] = ['ellipse', [[x0, y0], [x1, y1]], "center", np.array(pen_color)]
+            elif line[0] == 'drawCurve':
+                item_id = line[1]
+                t = 2
+                p_list = []
+                while True:
+                    x = line[t]
+                    if x == "Bezier" or x == "B-spline":
+                        algorithm = line[t]
+                        break
+                    y = line[t + 1]
+                    t = t + 2
+                    p_list.append([int(x), int(y)])
+                item_dict[item_id] = ['curve', p_list, algorithm, np.array(pen_color)]
+            elif line[0] == 'translate':
+                item_id = line[1]
+                dx = int(line[2])
+                dy = int(line[3])
+                p_list = item_dict[item_id][1]
+                item_dict[item_id][1] = alg.translate(p_list, dx, dy)
             #...
 
             line = fp.readline()
