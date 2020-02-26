@@ -18,17 +18,92 @@ def draw_line(p_list, algorithm):
     if algorithm == 'Naive':
         if x0 == x1:
             for y in range(y0, y1 + 1):
-                result.append((x0, y))
+                result.append([x0, y])
         else:
             if x0 > x1:
                 x0, y0, x1, y1 = x1, y1, x0, y0
             k = (y1 - y0) / (x1 - x0)
             for x in range(x0, x1 + 1):
-                result.append((x, int(y0 + k * (x - x0))))
+                result.append([x, int(y0 + k * (x - x0))])
     elif algorithm == 'DDA':
-        pass
+        if x0 == x1:
+            for y in range(min(y0, y1), max(y0, y1) + 1):
+                result.append([x0, y])
+        elif y0 == y1:
+            for x in range(min(x0, x1), max(x0, x1) + 1):
+                result.append([x, y0])
+        else:
+            k = (y1 - y0) / (x1 - x0)
+            if abs(k) <= 1:
+                if x0 > x1:
+                    x0, y0, x1, y1 = x1, y1, x0, y0
+                y = y0
+                for x in range(x0, x1 + 1):
+                    y = y + k
+                    result.append([int(x), int(y)])
+            else:
+                if y0 > y1:
+                    x0, y0, x1, y1 = x1, y1, x0, y0
+                x = x0
+                for y in range(y0, y1 + 1):
+                    x = x + 1 / k
+                    result.append([int(x), int(y)])
     elif algorithm == 'Bresenham':
-        pass
+        dx, dy = abs(x1 - x0), abs(y1 - y0)
+        if dx == 0:
+            for y in range(min(y0, y1), max(y0, y1) + 1):
+                result.append([x0, y])
+        elif dy == 0:
+            for x in range(min(x0, x1), max(x0, x1) + 1):
+                result.append([x, y0])
+        elif dx == dy:
+            if x0 > x1:
+                x0, y0, x1, y1 = x1, y1, x0, y0
+            for x in range(0, dx + 1):
+                result.append([x0 + x, y0 + x])
+        elif dx == - dy:
+            if x0 > x1:
+                x0, y0, x1, y1 = x1, y1, x0, y0
+            for x in range(0, dx + 1):
+                result.append([x0 + x, y0 - x])
+        elif dy < dx:  # |m| < 1
+            dx2, dy2 = 2 * dx, 2 * dy
+            if x0 > x1:
+                x0, y0, x1, y1 = x1, y1, x0, y0
+            # 确保 x0 < x1
+            if y0 < y1:
+                uy = 1
+            else:
+                uy = -1
+            y = y0
+            p = 2 * dy - dx
+            result.append([x0, y0])
+            for x in range(x0 + 1, x1 + 1):
+                if p < 0:
+                    p = p + dy2
+                else:  # p > 0
+                    y = y + uy
+                    p = p + dy2 - dx2
+                result.append([x, y])
+        else:  # |m| > 1
+            dx2, dy2 = 2 * dx, 2 * dy
+            if y0 > y1:
+                x0, y0, x1, y1 = x1, y1, x0, y0
+            # 确保 y0 < y1
+            if x0 < x1:
+                ux = 1
+            else:
+                ux = -1
+            x = x0
+            p = 2 * dx - dy
+            result.append([x0, y0])
+            for y in range(y0 + 1, y1 + 1):
+                if p < 0:
+                    p = p + dx2
+                else:  # p > 0
+                    x = x + ux
+                    p = p + dx2 - dy2
+                result.append([x, y])
     return result
 
 

@@ -1,0 +1,8 @@
+/source/*
+/.idea/*
+/output/*
+/*.sh
+!/sourse/*.py
+!/*.txt
+*.pdf
+*.bmp
