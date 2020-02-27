@@ -39,15 +39,15 @@ def draw_line(p_list, algorithm):
                     x0, y0, x1, y1 = x1, y1, x0, y0
                 y = y0
                 for x in range(x0, x1 + 1):
-                    y = y + k
                     result.append([int(x), int(y)])
+                    y = y + k
             else:
                 if y0 > y1:
                     x0, y0, x1, y1 = x1, y1, x0, y0
                 x = x0
                 for y in range(y0, y1 + 1):
-                    x = x + 1 / k
                     result.append([int(x), int(y)])
+                    x = x + 1 / k
     elif algorithm == 'Bresenham':
         dx, dy = abs(x1 - x0), abs(y1 - y0)
         if dx == 0:
@@ -130,7 +130,6 @@ def draw_ellipse(p_list):
     x0, y0, x1, y1 = p_list[0][0], p_list[0][1], p_list[1][0], p_list[1][1],
     cx, cy = (x0 + x1) / 2, (y0 + y1) / 2
     rx, ry = abs(x1 - x0) / 2, abs(y1 - y0) / 2
-    # print(cx, cy, rx, ry)
     # 椭圆方程为 (x - cx)^2 / rx^2 + (y - cy)^2 / ry^2 = 1 (无论焦点在x轴y轴)
     x, y = 0, ry
     result.append([int(cx + x), int(cy + y)])
@@ -206,7 +205,7 @@ def rotate(p_list, x, y, r):
     for [x1, y1] in p_list:
         x1, y1 = x + (x1 - x) * math.cos(r) - (y1 - y) * math.sin(r), \
                  y + (x1 - x) * math.sin(r) + (y1 - y) * math.cos(r)
-        result.append([int(x1), int(y1)])
+        result.append([round(x1), round(y1)])
     return result
 
 
@@ -222,7 +221,7 @@ def scale(p_list, x, y, s):
     result = []
     for [x1, y1] in p_list:
         x1, y1 = x + (x1 - x) * s, y + (y1 - y) * s
-        result.append([int(x1), int(y1)])
+        result.append([round(x1), round(y1)])
     return result
 
 
@@ -237,4 +236,42 @@ def clip(p_list, x_min, y_min, x_max, y_max, algorithm):
     :param algorithm: (string) 使用的裁剪算法，包括'Cohen-Sutherland'和'Liang-Barsky'
     :return: (list of list of int: [[x_0, y_0], [x_1, y_1]]) 裁剪后线段的起点和终点坐标
     """
-    pass
+    x0, y0 = p_list[0]
+    x1, y1 = p_list[1]
+    if algorithm == "Cohen-Sutherland":
+        pos0 = (x0 < x_min) + ((x0 > x_max) << 1) + ((y0 < y_min) << 2) + ((y0 > y_max) << 3)
+        pos1 = (x1 < x_min) + ((x1 > x_max) << 1) + ((y1 < y_min) << 2) + ((y1 > y_max) << 3)
+        if pos0 == 0 and pos1 == 0:
+            return p_list
+        elif pos0 & pos1 != 0:
+            return [[0, 0], [0, 0]]
+        else:  # 依次检查和每个边界的交点
+            if pos0 & 1:  # 左(x1 != x0)
+                y0 = y0 + (y1 - y0) * (x_min - x0) / (x1 - x0)
+                x0 = x_min
+            elif pos0 & 2:  # 右(x1 != x0)
+                y0 = y0 + (y1 - y0) * (x_max - x0) / (x1 - x0)
+                x0 = x_max
+            pos0 = (x0 < x_min) + ((x0 > x_max) << 1) + ((y0 < y_min) << 2) + ((y0 > y_max) << 3)
+            if pos0 & 8:  # 上(y1 != y0)
+                x0 = x0 + (x1 - x0) * (y_max - y0) / (y1 - y0)
+                y0 = y_max
+            elif pos0 & 4:  # 下(y1 != y0)
+                x0 = x0 + (x1 - x0) * (y_min - y0) / (y1 - y0)
+                y0 = y_min
+
+            # 另一个端点
+            if pos1 & 1:  # 左(x1 != x0)
+                y1 = y0 + (y1 - y0) * (x_min - x0) / (x1 - x0)
+                x1 = x_min
+            elif pos1 & 2:  # 右(x1 != x0)
+                y1 = y0 + (y1 - y0) * (x_max - x0) / (x1 - x0)
+                x1 = x_max
+            pos1 = (x1 < x_min) + ((x1 > x_max) << 1) + ((y1 < y_min) << 2) + ((y1 > y_max) << 3)
+            if pos1 & 8:  # 上(y1 != y0)
+                x1 = x0 + (x1 - x0) * (y_max - y0) / (y1 - y0)
+                y1 = y_max
+            elif pos1 & 4:  # 下(y1 != y0)
+                x1 = x0 + (x1 - x0) * (y_min - y0) / (y1 - y0)
+                y1 = y_min
+            return [[round(x0), round(y0)], [round(x1), round(y1)]]

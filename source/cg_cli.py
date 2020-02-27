@@ -112,6 +112,15 @@ if __name__ == '__main__':
                 s = float(line[4])
                 p_list = item_dict[item_id][1]
                 item_dict[item_id][1] = alg.scale(p_list, x, y, s)
+            elif line[0] == 'clip':
+                item_id = line[1]
+                x0 = int(line[2])
+                y0 = int(line[3])
+                x1 = int(line[4])
+                y1 = int(line[5])
+                algorithm = line[6]
+                p_list = item_dict[item_id][1]
+                item_dict[item_id][1] = alg.clip(p_list, x0, y0, x1, y1, algorithm)
             #...
             line = fp.readline()
 
