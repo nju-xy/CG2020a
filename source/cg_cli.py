@@ -98,7 +98,20 @@ if __name__ == '__main__':
                 dy = int(line[3])
                 p_list = item_dict[item_id][1]
                 item_dict[item_id][1] = alg.translate(p_list, dx, dy)
+            elif line[0] == 'rotate':
+                item_id = line[1]
+                x = int(line[2])
+                y = int(line[3])
+                r = int(line[4])
+                p_list = item_dict[item_id][1]
+                item_dict[item_id][1] = alg.rotate(p_list, x, y, r)
+            elif line[0] == 'scale':
+                item_id = line[1]
+                x = int(line[2])
+                y = int(line[3])
+                s = float(line[4])
+                p_list = item_dict[item_id][1]
+                item_dict[item_id][1] = alg.scale(p_list, x, y, s)
             #...
-
             line = fp.readline()
 

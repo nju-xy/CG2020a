@@ -2,13 +2,10 @@ resetCanvas 600 500
 
 setcolor 255 0 0
 
-drawPolygon Poly1 0 0 0 400 300 400 300 0 DDA
+drawPolygon pol1 100 200 200 200 300 300 DDA
 
-drawEllipse Ellipse1 0 0 300 400
+scale pol1 100 0 1.2
 
-drawLine Line1 150 0 150 400 DDA
-drawLine Line2 0 200 300 200 DDA
+drawPolygon pol2 100 200 200 200 300 300 DDA
 
-translate Ellipse1 10 80
-
-saveCanvas ellipse
+saveCanvas 1
