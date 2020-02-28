@@ -4,8 +4,8 @@ setcolor 255 0 0
 
 drawPolygon pol1 100 200 300 200 300 300 100 300 Bresenham
 
-drawLine line1 250 0 0 400 Bresenham
+drawLine line1 250 0 200 250 Bresenham
 
-clip line1 100 200 300 300 Cohen-Sutherland
+clip line1 100 200 300 300 Liang-Barsky
 
 saveCanvas 1

@@ -120,7 +120,11 @@ if __name__ == '__main__':
                 y1 = int(line[5])
                 algorithm = line[6]
                 p_list = item_dict[item_id][1]
-                item_dict[item_id][1] = alg.clip(p_list, x0, y0, x1, y1, algorithm)
+                ret = alg.clip(p_list, x0, y0, x1, y1, algorithm)
+                if ret:
+                    item_dict[item_id][1] = ret
+                else:
+                    del item_dict[item_id]
             #...
             line = fp.readline()
 

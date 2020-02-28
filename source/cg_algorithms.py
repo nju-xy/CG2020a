@@ -244,8 +244,9 @@ def clip(p_list, x_min, y_min, x_max, y_max, algorithm):
         if pos0 == 0 and pos1 == 0:
             return p_list
         elif pos0 & pos1 != 0:
-            return [[0, 0], [0, 0]]
+            return []
         else:  # 依次检查和每个边界的交点
+            # print(pos0, pos1)
             if pos0 & 1:  # 左(x1 != x0)
                 y0 = y0 + (y1 - y0) * (x_min - x0) / (x1 - x0)
                 x0 = x_min
@@ -259,8 +260,13 @@ def clip(p_list, x_min, y_min, x_max, y_max, algorithm):
             elif pos0 & 4:  # 下(y1 != y0)
                 x0 = x0 + (x1 - x0) * (y_min - y0) / (y1 - y0)
                 y0 = y_min
+            pos0 = (x0 < x_min) + ((x0 > x_max) << 1) + ((y0 < y_min) << 2) + ((y0 > y_max) << 3)
 
             # 另一个端点
+            if pos0 == 0 and pos1 == 0:
+                return [[round(x0), round(y0)], [round(x1), round(y1)]]
+            elif pos0 & pos1 != 0:
+                return []
             if pos1 & 1:  # 左(x1 != x0)
                 y1 = y0 + (y1 - y0) * (x_min - x0) / (x1 - x0)
                 x1 = x_min
@@ -274,4 +280,43 @@ def clip(p_list, x_min, y_min, x_max, y_max, algorithm):
             elif pos1 & 4:  # 下(y1 != y0)
                 x1 = x0 + (x1 - x0) * (y_min - y0) / (y1 - y0)
                 y1 = y_min
+            # print(x0, y0, x1, y1)
             return [[round(x0), round(y0)], [round(x1), round(y1)]]
+    elif algorithm == "Liang-Barsky":
+        dx, dy = x0 - x1, y0 - y1
+        # 裁剪条件:
+        # x_min <= x1 + u dx <= x_max
+        # y_min <= y1 + u dy <= y_max
+        p = [-dx, dx, -dy, dy]
+        q = [x1 - x_min, x_max - x1, y1 - y_min, y_max - y1]
+        if p[0] == 0:  # 和裁剪边界平行, 即p[1] == 0
+            assert(dy != 0)
+            if q[0] < 0 or q[1] < 0:  # 完全在边界外
+                return []
+            else:  # 进一步判断
+                u1, u2 = q[2] / p[2], q[3] / p[3]
+                u1, u2 = min(u1, u2), max(u1, u2)
+                u1, u2 = max(0, u1), min(1, u2)
+                if u1 > u2:
+                    return []
+                return [[round(x1 + u1 * dx), round(y1 + u1 * dy)], [round(x1 + u2 * dx), round(y1 + u2 * dy)]]
+        if p[2] == 0:  # 和裁剪边界平行, 即p[3] == 0
+            if q[2] < 0 or q[3] < 0:  # 完全在边界外
+                return []
+            else:  # 进一步判断
+                u1, u2 = q[0] / p[0], q[1] / p[1]
+                u1, u2 = min(u1, u2), max(u1, u2)
+                u1, u2 = max(0, u1), min(1, u2)
+                if u1 > u2:
+                    return []
+                return [[round(x1 + u1 * dx), round(y1 + u1 * dy)], [round(x1 + u2 * dx), round(y1 + u2 * dy)]]
+        u1, u2 = 0, 1
+        for k in range(0, 4):
+            if p[k] < 0:
+                u1 = max(q[k] / p[k], u1)
+            elif p[k] > 0:
+                u2 = min(q[k] / p[k], u2)
+        if u1 > u2:
+            return []
+        else:
+            return [[round(x1 + u1 * dx), round(y1 + u1 * dy)], [round(x1 + u2 * dx), round(y1 + u2 * dy)]]
