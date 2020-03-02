@@ -145,7 +145,7 @@ def draw_ellipse(p_list):
         result.append([int(cx - x), int(cy + y)])
         result.append([int(cx + x), int(cy - y)])
         result.append([int(cx - x), int(cy - y)])
-    p2 = ry * ry * (x + 1/2) * (x + 1/2) + rx * rx * (y - 1) * (y - 1) - rx * rx * ry * ry
+    p2 = ry * ry * (x + 1 / 2) * (x + 1 / 2) + rx * rx * (y - 1) * (y - 1) - rx * rx * ry * ry
     while y > 0:
         if p2 > 0:
             x, y = x, y - 1
@@ -167,13 +167,51 @@ def draw_curve(p_list, algorithm):
     :param algorithm: (string) 绘制使用的算法，包括'Bezier'和'B-spline'（三次均匀B样条曲线，曲线不必经过首末控制点）
     :return: (list of list of int: [[x_0, y_0], [x_1, y_1], [x_2, y_2], ...]) 绘制结果的像素点坐标列表
     """
-    # result = []
-    # if algorithm == 'Bezier':
-    #     for i in range(len(p_list)):
-    #
-    # elif algorithm == 'B-spline':
-    # return result
+    result = []
+    n = len(p_list) - 1  # n次Bezier曲线, n+1个控制点
+    if algorithm == "Bezier":
+        u = 0
+        step = 0.00001
+        p = p_list
+        while u <= 1:
+            # 使用de Casteljau算法,
+            # P[i][r] = (1 - u) P[i][r - 1] + u P[i + 1][r - 1]
+            # 曲线上的点为P(u) = P[0][n]
+            for r in range(1, n + 1):
+                for i in range(0, n - r + 1):
+                    p[i][0] = (1 - u) * p[i][0] + u * p[i + 1][0]
+                    p[i][1] = (1 - u) * p[i][1] + u * p[i + 1][1]
+            u = u + step
+            result.append([int(p[0][0]), int(p[0][1])])
+        return result
+    elif algorithm == "B-spline":  # 三次均匀B样条曲线, 4阶. k = 3
+        step = 0.0001
+        u = 3
+        while u <= n + 1:
+            # P(u) = sum_{i=0}^n P[i]B[i][4](u), u in [k, n+1]
+            # 首先计算B[i][1]: (0 <= i <= n + k) 即0 <= i <= n+3
+            # if u in [i, i+1), B[i][1] = 1; else B[i][1] = 0
+            b = []
+            for i in range(0, n + 4):
+                if i <= u < i + 1:
+                    b.append(1)
+                else:
+                    b.append(0)
+            # k > 1时, B[i][k](u) = (u-i)/(k-1) N[i][k-1](u)
+            #                       + (i+k-u)/(k-1) N[i+1][k-1](u)
+            # 最终求得 B[i][4](u), 0 <= i <= n
+            for k in range(2, 5):
+                for i in range(0, n + 5 - k):
+                    b[i] = b[i] * (u - i) / (k - 1) + b[i + 1] * (i + k - u) / (k - 1)
+            x, y = 0, 0
+            for i in range(0, n + 1):
+                x = x + p_list[i][0] * b[i]
+                y = y + p_list[i][1] * b[i]
+            u = u + step
+            result.append([int(x), int(y)])
 
+        # print(result)
+        return result
 
 
 def translate(p_list, dx, dy):
@@ -290,7 +328,7 @@ def clip(p_list, x_min, y_min, x_max, y_max, algorithm):
         p = [-dx, dx, -dy, dy]
         q = [x1 - x_min, x_max - x1, y1 - y_min, y_max - y1]
         if p[0] == 0:  # 和裁剪边界平行, 即p[1] == 0
-            assert(dy != 0)
+            assert (dy != 0)
             if q[0] < 0 or q[1] < 0:  # 完全在边界外
                 return []
             else:  # 进一步判断

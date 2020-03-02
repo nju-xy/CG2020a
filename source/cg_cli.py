@@ -63,14 +63,10 @@ if __name__ == '__main__':
                 item_id = line[1]
                 t = 2
                 p_list = []
-                while True:
-                    x = line[t]
-                    if x == "DDA" or x == "Bresenham":
-                        algorithm = line[t]
-                        break
-                    y = line[t + 1]
-                    t = t + 2
-                    p_list.append([int(x), int(y)])
+                n = int((len(line) - 3) / 2)
+                algorithm = line[len(line) - 1]
+                for i in range(0, n):
+                    p_list.append([int(line[i * 2 + 2]), int(line[i * 2 + 3])])
                 item_dict[item_id] = ['polygon', p_list, algorithm, np.array(pen_color)]
             elif line[0] == 'drawEllipse':
                 item_id = line[1]
@@ -83,14 +79,10 @@ if __name__ == '__main__':
                 item_id = line[1]
                 t = 2
                 p_list = []
-                while True:
-                    x = line[t]
-                    if x == "Bezier" or x == "B-spline":
-                        algorithm = line[t]
-                        break
-                    y = line[t + 1]
-                    t = t + 2
-                    p_list.append([int(x), int(y)])
+                n = int((len(line) - 3) / 2)
+                algorithm = line[len(line) - 1]
+                for i in range(0, n):
+                    p_list.append([int(line[i * 2 + 2]), int(line[i * 2 + 3])])
                 item_dict[item_id] = ['curve', p_list, algorithm, np.array(pen_color)]
             elif line[0] == 'translate':
                 item_id = line[1]
