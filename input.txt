@@ -2,10 +2,6 @@ resetCanvas 600 500
 
 setColor 0 0 0
 
-drawPolygon pol1 100 100 150 400 200 120 260 450 300 50 350 400 450 0 DDA
+drawLine l1 100 100 100 100 DDA
 
-setColor 0 255 0
-
-drawCurve cur1 100 100 150 400 200 120 260 450 300 50 350 400 450 0 B-spline
-
-saveCanvas B-spline1
+saveCanvas DDA

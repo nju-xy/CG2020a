@@ -26,28 +26,25 @@ def draw_line(p_list, algorithm):
             for x in range(x0, x1 + 1):
                 result.append([x, int(y0 + k * (x - x0))])
     elif algorithm == 'DDA':
-        if x0 == x1:
-            for y in range(min(y0, y1), max(y0, y1) + 1):
-                result.append([x0, y])
-        elif y0 == y1:
-            for x in range(min(x0, x1), max(x0, x1) + 1):
-                result.append([x, y0])
-        else:
+        if y1 == y0 and x1 == x0:
+            # 两个端点重合，可能不算线段，但是保险起见我特判一下吧
+            result.append([x0, y0])
+        elif abs(y1 - y0) <= abs(x1 - x0):
             k = (y1 - y0) / (x1 - x0)
-            if abs(k) <= 1:
-                if x0 > x1:
-                    x0, y0, x1, y1 = x1, y1, x0, y0
-                y = y0
-                for x in range(x0, x1 + 1):
-                    result.append([int(x), int(y)])
-                    y = y + k
-            else:
-                if y0 > y1:
-                    x0, y0, x1, y1 = x1, y1, x0, y0
-                x = x0
-                for y in range(y0, y1 + 1):
-                    result.append([int(x), int(y)])
-                    x = x + 1 / k
+            if x0 > x1:
+                x0, y0, x1, y1 = x1, y1, x0, y0
+            y = y0
+            for x in range(x0, x1 + 1):
+                result.append([round(x), round(y)])
+                y = y + k
+        else:  # abs(y1 - y0) > abs(x1 - x0)
+            k = (x1 - x0) / (y1 - y0)
+            if y0 > y1:
+                x0, y0, x1, y1 = x1, y1, x0, y0
+            x = x0
+            for y in range(y0, y1 + 1):
+                result.append([round(x), round(y)])
+                x = x + k
     elif algorithm == 'Bresenham':
         dx, dy = abs(x1 - x0), abs(y1 - y0)
         if dx == 0:
@@ -189,7 +186,7 @@ def draw_curve(p_list, algorithm):
         u = 3
         while u <= n + 1:
             # P(u) = sum_{i=0}^n P[i]B[i][4](u), u in [k, n+1]
-            # 首先计算B[i][1]: (0 <= i <= n + k) 即0 <= i <= n+3
+            # 首先计算B[i][1]: (0 <= i <= n + k) 即0 <= i <= n + 3
             # if u in [i, i+1), B[i][1] = 1; else B[i][1] = 0
             b = []
             for i in range(0, n + 4):
@@ -209,8 +206,6 @@ def draw_curve(p_list, algorithm):
                 y = y + p_list[i][1] * b[i]
             u = u + step
             result.append([int(x), int(y)])
-
-        # print(result)
         return result
 
 
@@ -222,6 +217,8 @@ def translate(p_list, dx, dy):
     :param dy: (int) 垂直方向平移量
     :return: (list of list of int: [[x_0, y_0], [x_1, y_1], [x_2, y_2], ...]) 变换后的图元参数
     """
+    # 将要平移的图元的所有控制点都进行平移
+    # 对于点(x, y), 平移(dx, dy)的结果为(x+dx, y+dy)
     result = []
     for [x, y] in p_list:
         x, y = x + dx, y + dy
@@ -238,6 +235,9 @@ def rotate(p_list, x, y, r):
     :param r: (int) 顺时针旋转角度（°）
     :return: (list of list of int: [[x_0, y_0], [x_1, y_1], [x_2, y_2], ...]) 变换后的图元参数
     """
+    # 将要平移的图元（非椭圆）的所有控制点都进行旋转
+    # 对于点(x1, y1), 绕点(x, y)旋转r°的结果为
+    # (x+(x1-x)*cos(r)-(y1-y)*sin(r), y+(x1-x)*sin(r)+(y1-y)*cos(r))
     result = []
     r = r * math.pi / 180
     for [x1, y1] in p_list:
@@ -256,6 +256,10 @@ def scale(p_list, x, y, s):
     :param s: (float) 缩放倍数
     :return: (list of list of int: [[x_0, y_0], [x_1, y_1], [x_2, y_2], ...]) 变换后的图元参数
     """
+    # 将要平移的图元的所有控制点都进行缩放。
+    # 对于点(x, y), 相对于缩放中心(x_f, y_f)以缩放倍数s缩放（一致缩放）的结果为(x_1,y_1)，其中
+    # x_1=x_f+(x-x_f)* s = x*s+x_f*(1-s)
+    # y_1=y_f+(y-y_f)* s = y*s+y_f*(1-s)
     result = []
     for [x1, y1] in p_list:
         x1, y1 = x + (x1 - x) * s, y + (y1 - y) * s
