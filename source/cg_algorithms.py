@@ -30,6 +30,7 @@ def draw_line(p_list, algorithm):
             # 两个端点重合，可能不算线段，但是保险起见我特判一下吧
             result.append([x0, y0])
         elif abs(y1 - y0) <= abs(x1 - x0):
+            # 若线段斜率绝对值小于等于1，则x方向取样
             k = (y1 - y0) / (x1 - x0)
             if x0 > x1:
                 x0, y0, x1, y1 = x1, y1, x0, y0
@@ -38,7 +39,9 @@ def draw_line(p_list, algorithm):
                 result.append([round(x), round(y)])
                 y = y + k
         else:  # abs(y1 - y0) > abs(x1 - x0)
+            # 若线段斜率绝对值大于1， 则y方向取样
             k = (x1 - x0) / (y1 - y0)
+            # 这里的k实际上是斜率的倒数
             if y0 > y1:
                 x0, y0, x1, y1 = x1, y1, x0, y0
             x = x0
@@ -71,11 +74,12 @@ def draw_line(p_list, algorithm):
                 uy = 1
             else:
                 uy = -1
+            # uy是y更新的增量方向
             y = y0
             p = 2 * dy - dx
             result.append([x0, y0])
             for x in range(x0 + 1, x1 + 1):
-                if p < 0:
+                if p <= 0:
                     p = p + dy2
                 else:  # p > 0
                     y = y + uy
@@ -90,13 +94,14 @@ def draw_line(p_list, algorithm):
                 ux = 1
             else:
                 ux = -1
+            # ux是x更新的增量方向
             x = x0
-            p = 2 * dx - dy
+            p = 2 * dx - dy  # 决策参数p
             result.append([x0, y0])
             for y in range(y0 + 1, y1 + 1):
                 if p < 0:
                     p = p + dx2
-                else:  # p > 0
+                else:  # p >= 0
                     x = x + ux
                     p = p + dx2 - dy2
                 result.append([x, y])
@@ -129,7 +134,7 @@ def draw_ellipse(p_list):
     rx, ry = abs(x1 - x0) / 2, abs(y1 - y0) / 2
     # 椭圆方程为 (x - cx)^2 / rx^2 + (y - cy)^2 / ry^2 = 1 (无论焦点在x轴y轴)
     x, y = 0, ry
-    result.append([int(cx + x), int(cy + y)])
+    result.append([round(cx + x), round(cy + y)])
     p1 = ry * ry - rx * rx * ry + rx * rx / 4
     while rx * rx * y > ry * ry * x:
         if p1 < 0:
@@ -138,10 +143,10 @@ def draw_ellipse(p_list):
         else:
             x, y = x + 1, y - 1
             p1 = p1 + 2 * ry * ry * x - 2 * rx * rx * y + ry * ry
-        result.append([int(cx + x), int(cy + y)])
-        result.append([int(cx - x), int(cy + y)])
-        result.append([int(cx + x), int(cy - y)])
-        result.append([int(cx - x), int(cy - y)])
+        result.append([round(cx + x), round(cy + y)])
+        result.append([round(cx - x), round(cy + y)])
+        result.append([round(cx + x), round(cy - y)])
+        result.append([round(cx - x), round(cy - y)])
     p2 = ry * ry * (x + 1 / 2) * (x + 1 / 2) + rx * rx * (y - 1) * (y - 1) - rx * rx * ry * ry
     while y > 0:
         if p2 > 0:
@@ -150,10 +155,10 @@ def draw_ellipse(p_list):
         else:
             x, y = x + 1, y - 1
             p2 = p2 + 2 * ry * ry * x - 2 * rx * rx * y + rx * rx
-        result.append([int(cx + x), int(cy + y)])
-        result.append([int(cx - x), int(cy + y)])
-        result.append([int(cx + x), int(cy - y)])
-        result.append([int(cx - x), int(cy - y)])
+        result.append([round(cx + x), round(cy + y)])
+        result.append([round(cx - x), round(cy + y)])
+        result.append([round(cx + x), round(cy - y)])
+        result.append([round(cx - x), round(cy - y)])
     return result
 
 
@@ -179,7 +184,7 @@ def draw_curve(p_list, algorithm):
                     p[i][0] = (1 - u) * p[i][0] + u * p[i + 1][0]
                     p[i][1] = (1 - u) * p[i][1] + u * p[i + 1][1]
             u = u + step
-            result.append([int(p[0][0]), int(p[0][1])])
+            result.append([round(p[0][0]), round(p[0][1])])
         return result
     elif algorithm == "B-spline":  # 三次均匀B样条曲线, 4阶. k = 3
         step = 0.0001
@@ -205,7 +210,7 @@ def draw_curve(p_list, algorithm):
                 x = x + p_list[i][0] * b[i]
                 y = y + p_list[i][1] * b[i]
             u = u + step
-            result.append([int(x), int(y)])
+            result.append([round(x), round(y)])
         return result
 
 

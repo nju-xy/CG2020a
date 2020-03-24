@@ -23,6 +23,7 @@ class MyCanvas(QGraphicsView):
     """
     画布窗体类，继承自QGraphicsView，采用QGraphicsView、QGraphicsScene、QGraphicsItem的绘图框架
     """
+
     def __init__(self, *args):
         super().__init__(*args)
         self.main_window = None
@@ -37,6 +38,11 @@ class MyCanvas(QGraphicsView):
 
     def start_draw_line(self, algorithm, item_id):
         self.status = 'line'
+        self.temp_algorithm = algorithm
+        self.temp_id = item_id
+
+    def start_draw_polygon(self, algorithm, item_id):
+        self.status = 'polygon'
         self.temp_algorithm = algorithm
         self.temp_id = item_id
 
@@ -59,30 +65,42 @@ class MyCanvas(QGraphicsView):
         self.status = ''
         self.updateScene([self.sceneRect()])
 
-    def mousePressEvent(self, event: QMouseEvent) -> None:
+    def mousePressEvent(self, event: QMouseEvent) -> None:  # mark
         pos = self.mapToScene(event.localPos().toPoint())
         x = int(pos.x())
         y = int(pos.y())
         if self.status == 'line':
             self.temp_item = MyItem(self.temp_id, self.status, [[x, y], [x, y]], self.temp_algorithm)
             self.scene().addItem(self.temp_item)
+        elif self.status == 'polygon':
+            self.temp_item = MyItem(self.temp_id, self.status, [[x, y], [x, y]], self.temp_algorithm)
+            self.scene().addItem(self.temp_item)
+            print("Press")
         self.updateScene([self.sceneRect()])
         super().mousePressEvent(event)
 
-    def mouseMoveEvent(self, event: QMouseEvent) -> None:
+    def mouseMoveEvent(self, event: QMouseEvent) -> None:  # mark
         pos = self.mapToScene(event.localPos().toPoint())
         x = int(pos.x())
         y = int(pos.y())
         if self.status == 'line':
             self.temp_item.p_list[1] = [x, y]
+        elif self.status == 'polygon':
+            self.temp_item.p_list.append([x, y])
+            print("Move")
         self.updateScene([self.sceneRect()])
         super().mouseMoveEvent(event)
 
-    def mouseReleaseEvent(self, event: QMouseEvent) -> None:
+    def mouseReleaseEvent(self, event: QMouseEvent) -> None:  # mark
         if self.status == 'line':
             self.item_dict[self.temp_id] = self.temp_item
             self.list_widget.addItem(self.temp_id)
             self.finish_draw()
+        elif self.status == 'polygon':
+            self.item_dict[self.temp_id] = self.temp_item
+            self.list_widget.addItem(self.temp_id)
+            self.finish_draw()
+            print("release")
         super().mouseReleaseEvent(event)
 
 
@@ -90,6 +108,7 @@ class MyItem(QGraphicsItem):
     """
     自定义图元类，继承自QGraphicsItem
     """
+
     def __init__(self, item_id: str, item_type: str, p_list: list, algorithm: str = '', parent: QGraphicsItem = None):
         """
 
@@ -100,13 +119,14 @@ class MyItem(QGraphicsItem):
         :param parent:
         """
         super().__init__(parent)
-        self.id = item_id           # 图元ID
+        self.id = item_id  # 图元ID
         self.item_type = item_type  # 图元类型，'line'、'polygon'、'ellipse'、'curve'等
-        self.p_list = p_list        # 图元参数
+        self.p_list = p_list  # 图元参数
         self.algorithm = algorithm  # 绘制算法，'DDA'、'Bresenham'、'Bezier'、'B-spline'等
         self.selected = False
 
-    def paint(self, painter: QPainter, option: QStyleOptionGraphicsItem, widget: Optional[QWidget] = ...) -> None:
+    def paint(self, painter: QPainter, option: QStyleOptionGraphicsItem,
+              widget: Optional[QWidget] = ...) -> None:  # mark
         if self.item_type == 'line':
             item_pixels = alg.draw_line(self.p_list, self.algorithm)
             for p in item_pixels:
@@ -115,13 +135,19 @@ class MyItem(QGraphicsItem):
                 painter.setPen(QColor(255, 0, 0))
                 painter.drawRect(self.boundingRect())
         elif self.item_type == 'polygon':
-            pass
+            print("paint")
+            item_pixels = alg.draw_polygon(self.p_list, self.algorithm)
+            for p in item_pixels:
+                painter.drawPoint(*p)
+            if self.selected:
+                painter.setPen(QColor(255, 0, 0))
+                painter.drawRect(self.boundingRect())
         elif self.item_type == 'ellipse':
             pass
         elif self.item_type == 'curve':
             pass
 
-    def boundingRect(self) -> QRectF:
+    def boundingRect(self) -> QRectF:  # mark
         if self.item_type == 'line':
             x0, y0 = self.p_list[0]
             x1, y1 = self.p_list[1]
@@ -131,7 +157,14 @@ class MyItem(QGraphicsItem):
             h = max(y0, y1) - y
             return QRectF(x - 1, y - 1, w + 2, h + 2)
         elif self.item_type == 'polygon':
-            pass
+            x_min, y_min = self.p_list[0]
+            x_max, y_max = self.p_list[0]
+            for x, y in self.p_list:
+                x_min = min(x_min, x)
+                x_max = max(x_max, x)
+                y_min = min(y_min, y)
+                y_max = max(y_max, y)
+            return QRectF(x_min - 1, y_min - 1, x_max - x_min + 2, y_max - y_min + 2)
         elif self.item_type == 'ellipse':
             pass
         elif self.item_type == 'curve':
@@ -142,6 +175,7 @@ class MainWindow(QMainWindow):
     """
     主窗口类
     """
+
     def __init__(self):
         super().__init__()
         self.item_cnt = 0
@@ -184,9 +218,12 @@ class MainWindow(QMainWindow):
         clip_cohen_sutherland_act = clip_menu.addAction('Cohen-Sutherland')
         clip_liang_barsky_act = clip_menu.addAction('Liang-Barsky')
 
-        # 连接信号和槽函数
+        # 连接信号和槽函数 mark
         exit_act.triggered.connect(qApp.quit)
         line_naive_act.triggered.connect(self.line_naive_action)
+        line_dda_act.triggered.connect(self.line_dda_action)
+        line_bresenham_act.triggered.connect(self.line_bresenham_action)
+        polygon_dda_act.triggered.connect(self.polygon_dda_action)
         self.list_widget.currentTextChanged.connect(self.canvas_widget.selection_changed)
 
         # 设置主窗口的布局
@@ -210,6 +247,26 @@ class MainWindow(QMainWindow):
         self.statusBar().showMessage('Naive算法绘制线段')
         self.list_widget.clearSelection()
         self.canvas_widget.clear_selection()
+
+    def line_dda_action(self):
+        self.canvas_widget.start_draw_line('DDA', self.get_id())
+        self.statusBar().showMessage('DDA算法绘制线段')
+        self.list_widget.clearSelection()
+        self.canvas_widget.clear_selection()
+
+    def line_bresenham_action(self):
+        self.canvas_widget.start_draw_line('Bresenham', self.get_id())
+        self.statusBar().showMessage('Bresenham算法绘制线段')
+        self.list_widget.clearSelection()
+        self.canvas_widget.clear_selection()
+
+    def polygon_dda_action(self):
+        self.canvas_widget.start_draw_polygon('DDA', self.get_id())
+        self.statusBar().showMessage('DDA算法绘制多边形')
+        self.list_widget.clearSelection()
+        self.canvas_widget.clear_selection()
+
+    # mark
 
 
 if __name__ == '__main__':
