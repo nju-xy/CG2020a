@@ -35,6 +35,7 @@ class MyCanvas(QGraphicsView):
         self.temp_algorithm = ''
         self.temp_id = ''
         self.temp_item = None
+        self.double_click = 0
 
     def start_draw_line(self, algorithm, item_id):
         self.status = 'line'
@@ -48,6 +49,7 @@ class MyCanvas(QGraphicsView):
 
     def finish_draw(self):
         self.temp_id = self.main_window.get_id()
+        self.temp_item = None
 
     def clear_selection(self):
         if self.selected_id != '':
@@ -66,6 +68,7 @@ class MyCanvas(QGraphicsView):
         self.updateScene([self.sceneRect()])
 
     def mousePressEvent(self, event: QMouseEvent) -> None:  # mark
+        print("press")
         pos = self.mapToScene(event.localPos().toPoint())
         x = int(pos.x())
         y = int(pos.y())
@@ -73,34 +76,53 @@ class MyCanvas(QGraphicsView):
             self.temp_item = MyItem(self.temp_id, self.status, [[x, y], [x, y]], self.temp_algorithm)
             self.scene().addItem(self.temp_item)
         elif self.status == 'polygon':
-            self.temp_item = MyItem(self.temp_id, self.status, [[x, y], [x, y]], self.temp_algorithm)
-            self.scene().addItem(self.temp_item)
-            print("Press")
+            if self.temp_item is None:
+                self.temp_item = MyItem(self.temp_id, self.status, [[x, y], [x, y]], self.temp_algorithm, 0)
+                self.scene().addItem(self.temp_item)
+            else:
+                self.temp_item.p_list.append([x, y])
         self.updateScene([self.sceneRect()])
         super().mousePressEvent(event)
 
+    def mouseDoubleClickEvent(self, event: QMouseEvent) -> None:  # 不解决双击会有很多问题
+        self.double_click = 1
+        print("double click")
+
     def mouseMoveEvent(self, event: QMouseEvent) -> None:  # mark
+        print("move")
+        if self.double_click == 1:
+            return
         pos = self.mapToScene(event.localPos().toPoint())
         x = int(pos.x())
         y = int(pos.y())
         if self.status == 'line':
             self.temp_item.p_list[1] = [x, y]
         elif self.status == 'polygon':
-            self.temp_item.p_list.append([x, y])
-            print("Move")
+            self.temp_item.p_list[-1] = [x, y]
         self.updateScene([self.sceneRect()])
         super().mouseMoveEvent(event)
 
     def mouseReleaseEvent(self, event: QMouseEvent) -> None:  # mark
+        print("release")
+        if self.double_click == 1:
+            self.double_click = 0
+            return
         if self.status == 'line':
             self.item_dict[self.temp_id] = self.temp_item
             self.list_widget.addItem(self.temp_id)
             self.finish_draw()
         elif self.status == 'polygon':
-            self.item_dict[self.temp_id] = self.temp_item
-            self.list_widget.addItem(self.temp_id)
-            self.finish_draw()
-            print("release")
+            threshold = 10
+            # if self.temp_item is None:
+            #     print("嘤")
+            if abs(self.temp_item.p_list[-1][0] - self.temp_item.p_list[0][0]) \
+                    + abs(self.temp_item.p_list[-1][0] - self.temp_item.p_list[0][0]) <= threshold:
+                self.temp_item.p_list[-1] = self.temp_item.p_list[0]
+                self.temp_item.end = 1
+                self.item_dict[self.temp_id] = self.temp_item
+                self.list_widget.addItem(self.temp_id)
+                self.finish_draw()
+                self.updateScene([self.sceneRect()])
         super().mouseReleaseEvent(event)
 
 
@@ -109,7 +131,8 @@ class MyItem(QGraphicsItem):
     自定义图元类，继承自QGraphicsItem
     """
 
-    def __init__(self, item_id: str, item_type: str, p_list: list, algorithm: str = '', parent: QGraphicsItem = None):
+    def __init__(self, item_id: str, item_type: str, p_list: list, algorithm: str = '', end: int = 0,
+                 parent: QGraphicsItem = None):
         """
 
         :param item_id: 图元ID
@@ -117,6 +140,7 @@ class MyItem(QGraphicsItem):
         :param p_list: 图元参数
         :param algorithm: 绘制算法，'DDA'、'Bresenham'、'Bezier'、'B-spline'等
         :param parent:
+        :param end: 该图元绘制是否已经结束（我加的）
         """
         super().__init__(parent)
         self.id = item_id  # 图元ID
@@ -124,6 +148,7 @@ class MyItem(QGraphicsItem):
         self.p_list = p_list  # 图元参数
         self.algorithm = algorithm  # 绘制算法，'DDA'、'Bresenham'、'Bezier'、'B-spline'等
         self.selected = False
+        self.end = 0
 
     def paint(self, painter: QPainter, option: QStyleOptionGraphicsItem,
               widget: Optional[QWidget] = ...) -> None:  # mark
@@ -135,8 +160,8 @@ class MyItem(QGraphicsItem):
                 painter.setPen(QColor(255, 0, 0))
                 painter.drawRect(self.boundingRect())
         elif self.item_type == 'polygon':
-            print("paint")
-            item_pixels = alg.draw_polygon(self.p_list, self.algorithm)
+            # print("paint")
+            item_pixels = alg.draw_polygon(self.p_list, self.algorithm, self.end)
             for p in item_pixels:
                 painter.drawPoint(*p)
             if self.selected:
@@ -224,6 +249,7 @@ class MainWindow(QMainWindow):
         line_dda_act.triggered.connect(self.line_dda_action)
         line_bresenham_act.triggered.connect(self.line_bresenham_action)
         polygon_dda_act.triggered.connect(self.polygon_dda_action)
+        polygon_bresenham_act.triggered.connect(self.polygon_bresenham_action)
         self.list_widget.currentTextChanged.connect(self.canvas_widget.selection_changed)
 
         # 设置主窗口的布局
@@ -263,6 +289,12 @@ class MainWindow(QMainWindow):
     def polygon_dda_action(self):
         self.canvas_widget.start_draw_polygon('DDA', self.get_id())
         self.statusBar().showMessage('DDA算法绘制多边形')
+        self.list_widget.clearSelection()
+        self.canvas_widget.clear_selection()
+
+    def polygon_bresenham_action(self):
+        self.canvas_widget.start_draw_polygon('Bresenham', self.get_id())
+        self.statusBar().showMessage('Bresenham算法绘制多边形')
         self.list_widget.clearSelection()
         self.canvas_widget.clear_selection()
 

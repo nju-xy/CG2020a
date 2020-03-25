@@ -108,17 +108,23 @@ def draw_line(p_list, algorithm):
     return result
 
 
-def draw_polygon(p_list, algorithm):
+def draw_polygon(p_list, algorithm, end):
     """绘制多边形
 
     :param p_list: (list of list of int: [[x0, y0], [x1, y1], [x2, y2], ...]) 多边形的顶点坐标列表
     :param algorithm: (string) 绘制使用的算法，包括'DDA'和'Bresenham'
+    :param end: (int) 我加的，用来表示多边形绘制是否结束，没结束就不闭合，GUI里面用
     :return: (list of list of int: [[x_0, y_0], [x_1, y_1], [x_2, y_2], ...]) 绘制结果的像素点坐标列表
     """
     result = []
-    for i in range(len(p_list)):
-        line = draw_line([p_list[i - 1], p_list[i]], algorithm)
-        result += line
+    if end == 0:
+        for i in range(1, len(p_list)):
+            line = draw_line([p_list[i - 1], p_list[i]], algorithm)
+            result += line
+    else:
+        for i in range(len(p_list)):
+            line = draw_line([p_list[i - 1], p_list[i]], algorithm)
+            result += line
     return result
 
 

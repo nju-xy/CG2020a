@@ -1,7 +1,7 @@
 resetCanvas 600 500
 
-setColor 0 0 0
+setColor 255 0 0
 
-drawLine l1 100 100 100 200 DDA
+drawPolygon p1 100 100 100 200 200 300 DDA
 
-saveCanvas DDA
+saveCanvas draft
