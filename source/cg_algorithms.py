@@ -179,8 +179,10 @@ def draw_curve(p_list, algorithm):
     n = len(p_list) - 1  # n次Bezier曲线, n+1个控制点
     if algorithm == "Bezier":
         u = 0
-        step = 0.00001
-        p = p_list
+        step = 0.00005
+        p = []
+        for i in range(0, n + 1):
+            p.append([p_list[i][0], p_list[i][1]])
         while u <= 1:
             # 使用de Casteljau算法,
             # P[i][r] = (1 - u) P[i][r - 1] + u P[i + 1][r - 1]
