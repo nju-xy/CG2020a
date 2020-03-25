@@ -47,6 +47,13 @@ class MyCanvas(QGraphicsView):
         self.temp_algorithm = algorithm
         self.temp_id = item_id
 
+    def start_draw_ellipse(self, algorithm, item_id):
+        self.status = 'ellipse'
+        self.temp_algorithm = algorithm
+        self.temp_id = item_id
+
+    # mark
+
     def finish_draw(self):
         self.temp_id = self.main_window.get_id()
         self.temp_item = None
@@ -81,12 +88,22 @@ class MyCanvas(QGraphicsView):
                 self.scene().addItem(self.temp_item)
             else:
                 self.temp_item.p_list.append([x, y])
+        elif self.status == 'ellipse':
+            self.temp_item = MyItem(self.temp_id, self.status, [[x, y], [x, y]], self.temp_algorithm)
+            self.scene().addItem(self.temp_item)
         self.updateScene([self.sceneRect()])
         super().mousePressEvent(event)
 
     def mouseDoubleClickEvent(self, event: QMouseEvent) -> None:  # 不解决双击会有很多问题
-        self.double_click = 1
         print("double click")
+        self.double_click = 1
+        if self.status == 'polygon':
+            self.temp_item.p_list[-1] = self.temp_item.p_list[0]
+            self.temp_item.end = 1
+            self.item_dict[self.temp_id] = self.temp_item
+            self.list_widget.addItem(self.temp_id)
+            self.finish_draw()
+            self.updateScene([self.sceneRect()])
 
     def mouseMoveEvent(self, event: QMouseEvent) -> None:  # mark
         print("move")
@@ -99,6 +116,8 @@ class MyCanvas(QGraphicsView):
             self.temp_item.p_list[1] = [x, y]
         elif self.status == 'polygon':
             self.temp_item.p_list[-1] = [x, y]
+        elif self.status == 'ellipse':
+            self.temp_item.p_list[1] = [x, y]
         self.updateScene([self.sceneRect()])
         super().mouseMoveEvent(event)
 
@@ -113,8 +132,6 @@ class MyCanvas(QGraphicsView):
             self.finish_draw()
         elif self.status == 'polygon':
             threshold = 10
-            # if self.temp_item is None:
-            #     print("嘤")
             if abs(self.temp_item.p_list[-1][0] - self.temp_item.p_list[0][0]) \
                     + abs(self.temp_item.p_list[-1][0] - self.temp_item.p_list[0][0]) <= threshold:
                 self.temp_item.p_list[-1] = self.temp_item.p_list[0]
@@ -123,6 +140,10 @@ class MyCanvas(QGraphicsView):
                 self.list_widget.addItem(self.temp_id)
                 self.finish_draw()
                 self.updateScene([self.sceneRect()])
+        elif self.status == 'ellipse':
+            self.item_dict[self.temp_id] = self.temp_item
+            self.list_widget.addItem(self.temp_id)
+            self.finish_draw()
         super().mouseReleaseEvent(event)
 
 
@@ -168,7 +189,12 @@ class MyItem(QGraphicsItem):
                 painter.setPen(QColor(255, 0, 0))
                 painter.drawRect(self.boundingRect())
         elif self.item_type == 'ellipse':
-            pass
+            item_pixels = alg.draw_ellipse(self.p_list)
+            for p in item_pixels:
+                painter.drawPoint(*p)
+            if self.selected:
+                painter.setPen(QColor(255, 0, 0))
+                painter.drawRect(self.boundingRect())
         elif self.item_type == 'curve':
             pass
 
@@ -191,7 +217,13 @@ class MyItem(QGraphicsItem):
                 y_max = max(y_max, y)
             return QRectF(x_min - 1, y_min - 1, x_max - x_min + 2, y_max - y_min + 2)
         elif self.item_type == 'ellipse':
-            pass
+            x0, y0 = self.p_list[0]
+            x1, y1 = self.p_list[1]
+            x = min(x0, x1)
+            y = min(y0, y1)
+            w = max(x0, x1) - x
+            h = max(y0, y1) - y
+            return QRectF(x - 1, y - 1, w + 2, h + 2)
         elif self.item_type == 'curve':
             pass
 
@@ -250,6 +282,7 @@ class MainWindow(QMainWindow):
         line_bresenham_act.triggered.connect(self.line_bresenham_action)
         polygon_dda_act.triggered.connect(self.polygon_dda_action)
         polygon_bresenham_act.triggered.connect(self.polygon_bresenham_action)
+        ellipse_act.triggered.connect(self.ellipse_action)
         self.list_widget.currentTextChanged.connect(self.canvas_widget.selection_changed)
 
         # 设置主窗口的布局
@@ -295,6 +328,12 @@ class MainWindow(QMainWindow):
     def polygon_bresenham_action(self):
         self.canvas_widget.start_draw_polygon('Bresenham', self.get_id())
         self.statusBar().showMessage('Bresenham算法绘制多边形')
+        self.list_widget.clearSelection()
+        self.canvas_widget.clear_selection()
+
+    def ellipse_action(self):
+        self.canvas_widget.start_draw_ellipse('center', self.get_id())
+        self.statusBar().showMessage('中心圆生成算法绘制椭圆')
         self.list_widget.clearSelection()
         self.canvas_widget.clear_selection()
 
