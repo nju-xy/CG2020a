@@ -17,6 +17,8 @@ def draw_line(p_list, algorithm):
     result = []
     if algorithm == 'Naive':
         if x0 == x1:
+            if y0 > y1:
+                x0, y0, x1, y1 = x1, y1, x0, y0
             for y in range(y0, y1 + 1):
                 result.append([x0, y])
         else:
@@ -36,17 +38,17 @@ def draw_line(p_list, algorithm):
                 x0, y0, x1, y1 = x1, y1, x0, y0
             y = y0
             for x in range(x0, x1 + 1):
-                result.append([round(x), round(y)])
+                result.append([int(x), int(y)])
                 y = y + k
         else:  # abs(y1 - y0) > abs(x1 - x0)
-            # 若线段斜率绝对值大于1， 则y方向取样
+            # 若线段斜率绝对值大于1(或者斜率不存在)， 则y方向取样
             k = (x1 - x0) / (y1 - y0)
             # 这里的k实际上是斜率的倒数
             if y0 > y1:
                 x0, y0, x1, y1 = x1, y1, x0, y0
             x = x0
             for y in range(y0, y1 + 1):
-                result.append([round(x), round(y)])
+                result.append([int(x), int(y)])
                 x = x + k
     elif algorithm == 'Bresenham':
         dx, dy = abs(x1 - x0), abs(y1 - y0)
@@ -108,23 +110,31 @@ def draw_line(p_list, algorithm):
     return result
 
 
-def draw_polygon(p_list, algorithm, end):
+def draw_polygon(p_list, algorithm):
     """绘制多边形
 
     :param p_list: (list of list of int: [[x0, y0], [x1, y1], [x2, y2], ...]) 多边形的顶点坐标列表
     :param algorithm: (string) 绘制使用的算法，包括'DDA'和'Bresenham'
-    :param end: (int) 我加的，用来表示多边形绘制是否结束，没结束就不闭合，GUI里面用
     :return: (list of list of int: [[x_0, y_0], [x_1, y_1], [x_2, y_2], ...]) 绘制结果的像素点坐标列表
     """
     result = []
-    if end == 0:
-        for i in range(1, len(p_list)):
-            line = draw_line([p_list[i - 1], p_list[i]], algorithm)
-            result += line
-    else:
-        for i in range(len(p_list)):
-            line = draw_line([p_list[i - 1], p_list[i]], algorithm)
-            result += line
+    for i in range(len(p_list)):
+        line = draw_line([p_list[i - 1], p_list[i]], algorithm)
+        result += line
+    return result
+
+
+def draw_polyline(p_list, algorithm):
+    """绘制折线
+
+    :param p_list: (list of list of int: [[x0, y0], [x1, y1], [x2, y2], ...]) 多边形的顶点坐标列表
+    :param algorithm: (string) 绘制使用的算法，包括'DDA'和'Bresenham'
+    :return: (list of list of int: [[x_0, y_0], [x_1, y_1], [x_2, y_2], ...]) 绘制结果的像素点坐标列表
+    """
+    result = []
+    for i in range(1, len(p_list)):
+        line = draw_line([p_list[i - 1], p_list[i]], algorithm)
+        result += line
     return result
 
 
@@ -140,7 +150,8 @@ def draw_ellipse(p_list):
     rx, ry = abs(x1 - x0) / 2, abs(y1 - y0) / 2
     # 椭圆方程为 (x - cx)^2 / rx^2 + (y - cy)^2 / ry^2 = 1 (无论焦点在x轴y轴)
     x, y = 0, ry
-    result.append([round(cx + x), round(cy + y)])
+    result.append([int(cx + x), int(cy + y)])
+    result.append([int(cx - x), int(cy - y)])
     p1 = ry * ry - rx * rx * ry + rx * rx / 4
     while rx * rx * y > ry * ry * x:
         if p1 < 0:
@@ -149,10 +160,10 @@ def draw_ellipse(p_list):
         else:
             x, y = x + 1, y - 1
             p1 = p1 + 2 * ry * ry * x - 2 * rx * rx * y + ry * ry
-        result.append([round(cx + x), round(cy + y)])
-        result.append([round(cx - x), round(cy + y)])
-        result.append([round(cx + x), round(cy - y)])
-        result.append([round(cx - x), round(cy - y)])
+        result.append([int(cx + x), int(cy + y)])
+        result.append([int(cx - x), int(cy + y)])
+        result.append([int(cx + x), int(cy - y)])
+        result.append([int(cx - x), int(cy - y)])
     p2 = ry * ry * (x + 1 / 2) * (x + 1 / 2) + rx * rx * (y - 1) * (y - 1) - rx * rx * ry * ry
     while y > 0:
         if p2 > 0:
@@ -161,10 +172,10 @@ def draw_ellipse(p_list):
         else:
             x, y = x + 1, y - 1
             p2 = p2 + 2 * ry * ry * x - 2 * rx * rx * y + rx * rx
-        result.append([round(cx + x), round(cy + y)])
-        result.append([round(cx - x), round(cy + y)])
-        result.append([round(cx + x), round(cy - y)])
-        result.append([round(cx - x), round(cy - y)])
+        result.append([int(cx + x), int(cy + y)])
+        result.append([int(cx - x), int(cy + y)])
+        result.append([int(cx + x), int(cy - y)])
+        result.append([int(cx - x), int(cy - y)])
     return result
 
 
@@ -192,7 +203,7 @@ def draw_curve(p_list, algorithm):
                     p[i][0] = (1 - u) * p[i][0] + u * p[i + 1][0]
                     p[i][1] = (1 - u) * p[i][1] + u * p[i + 1][1]
             u = u + step
-            result.append([round(p[0][0]), round(p[0][1])])
+            result.append([int(p[0][0]), int(p[0][1])])
         return result
     elif algorithm == "B-spline":  # 三次均匀B样条曲线, 4阶. k = 3
         step = 0.0001
@@ -218,7 +229,7 @@ def draw_curve(p_list, algorithm):
                 x = x + p_list[i][0] * b[i]
                 y = y + p_list[i][1] * b[i]
             u = u + step
-            result.append([round(x), round(y)])
+            result.append([int(x), int(y)])
         return result
 
 
@@ -256,7 +267,7 @@ def rotate(p_list, x, y, r):
     for [x1, y1] in p_list:
         x1, y1 = x + (x1 - x) * math.cos(r) - (y1 - y) * math.sin(r), \
                  y + (x1 - x) * math.sin(r) + (y1 - y) * math.cos(r)
-        result.append([round(x1), round(y1)])
+        result.append([int(x1), int(y1)])
     return result
 
 
@@ -276,7 +287,7 @@ def scale(p_list, x, y, s):
     result = []
     for [x1, y1] in p_list:
         x1, y1 = x + (x1 - x) * s, y + (y1 - y) * s
-        result.append([round(x1), round(y1)])
+        result.append([int(x1), int(y1)])
     return result
 
 
@@ -319,7 +330,7 @@ def clip(p_list, x_min, y_min, x_max, y_max, algorithm):
 
             # 另一个端点
             if pos0 == 0 and pos1 == 0:
-                return [[round(x0), round(y0)], [round(x1), round(y1)]]
+                return [[int(x0), int(y0)], [int(x1), int(y1)]]
             elif pos0 & pos1 != 0:
                 return []
             if pos1 & 1:  # 左(x1 != x0)
@@ -336,7 +347,7 @@ def clip(p_list, x_min, y_min, x_max, y_max, algorithm):
                 x1 = x0 + (x1 - x0) * (y_min - y0) / (y1 - y0)
                 y1 = y_min
             # print(x0, y0, x1, y1)
-            return [[round(x0), round(y0)], [round(x1), round(y1)]]
+            return [[int(x0), int(y0)], [int(x1), int(y1)]]
     elif algorithm == "Liang-Barsky":
         dx, dy = x0 - x1, y0 - y1
         # 裁剪条件:
@@ -354,7 +365,7 @@ def clip(p_list, x_min, y_min, x_max, y_max, algorithm):
                 u1, u2 = max(0, u1), min(1, u2)
                 if u1 > u2:
                     return []
-                return [[round(x1 + u1 * dx), round(y1 + u1 * dy)], [round(x1 + u2 * dx), round(y1 + u2 * dy)]]
+                return [[int(x1 + u1 * dx), int(y1 + u1 * dy)], [int(x1 + u2 * dx), int(y1 + u2 * dy)]]
         if p[2] == 0:  # 和裁剪边界平行, 即p[3] == 0
             if q[2] < 0 or q[3] < 0:  # 完全在边界外
                 return []
@@ -364,7 +375,7 @@ def clip(p_list, x_min, y_min, x_max, y_max, algorithm):
                 u1, u2 = max(0, u1), min(1, u2)
                 if u1 > u2:
                     return []
-                return [[round(x1 + u1 * dx), round(y1 + u1 * dy)], [round(x1 + u2 * dx), round(y1 + u2 * dy)]]
+                return [[int(x1 + u1 * dx), int(y1 + u1 * dy)], [int(x1 + u2 * dx), int(y1 + u2 * dy)]]
         u1, u2 = 0, 1
         for k in range(0, 4):
             if p[k] < 0:
@@ -374,4 +385,4 @@ def clip(p_list, x_min, y_min, x_max, y_max, algorithm):
         if u1 > u2:
             return []
         else:
-            return [[round(x1 + u1 * dx), round(y1 + u1 * dy)], [round(x1 + u2 * dx), round(y1 + u2 * dy)]]
+            return [[int(x1 + u1 * dx), int(y1 + u1 * dy)], [int(x1 + u2 * dx), int(y1 + u2 * dy)]]
