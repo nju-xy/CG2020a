@@ -163,7 +163,9 @@ class MyCanvas(QGraphicsView):
                 self.temp_item = MyItem(self.selected_id, self.status, [[cx, cy], [x, y], [x, y], ori_p_list])
         elif self.status == 'clip':
             if self.selected_id != '' and self.item_dict[self.selected_id].item_type == 'line':
-                self.temp_item = MyItem(self.selected_id, self.status, [[x, y], [x, y]])
+                self.temp_item = MyItem(self.selected_id, self.status, [[x, y], [x, y]], self.temp_algorithm,
+                                        QColor(255, 0, 0))
+                self.scene().addItem(self.temp_item)
         self.updateScene([self.sceneRect()])
         super().mousePressEvent(event)
 
@@ -242,7 +244,6 @@ class MyCanvas(QGraphicsView):
         elif self.status == 'clip':
             if self.selected_id != '' and self.item_dict[self.selected_id].item_type == 'line':
                 self.temp_item.p_list[1] = [x, y]
-
         self.updateScene([self.sceneRect()])
         super().mouseMoveEvent(event)
 
@@ -257,8 +258,9 @@ class MyCanvas(QGraphicsView):
             self.finish_draw()
         elif self.status == 'polygon':
             threshold = 10
-            if abs(self.temp_item.p_list[-1][0] - self.temp_item.p_list[0][0]) \
-                    + abs(self.temp_item.p_list[-1][0] - self.temp_item.p_list[0][0]) <= threshold:
+            if abs(self.temp_item.p_list[-1][0] - self.temp_item.p_list[0][0]) + abs(
+                    self.temp_item.p_list[-1][0] - self.temp_item.p_list[0][0]) <= threshold and len(
+                    self.temp_item.p_list) > 2:
                 self.temp_item.p_list[-1] = self.temp_item.p_list[0]
                 self.temp_item.end = 1
                 self.item_dict[self.temp_id] = self.temp_item
@@ -284,6 +286,7 @@ class MyCanvas(QGraphicsView):
                 x1, y1 = self.temp_item.p_list[1]
                 x_min, y_min, x_max, y_max = min(x0, x1), min(y0, y1), max(x0, x1), max(y0, y1)
                 self.item_dict[self.selected_id].item_clip(x_min, y_min, x_max, y_max, self.temp_algorithm)
+                self.scene().removeItem(self.temp_item)
                 self.updateScene([self.sceneRect()])
                 self.temp_item = None
         super().mouseReleaseEvent(event)
@@ -334,6 +337,10 @@ class MyItem(QGraphicsItem):
             item_pixels = alg.draw_polyline(self.p_list, self.algorithm)
         elif self.item_type == 'pencil':
             item_pixels = alg.draw_polyline(self.p_list, 'Bresenham')
+        elif self.item_type == 'clip':  # 画一个矩形而已
+            x_min, y_min, x_max, y_max = self.p_list[0][0], self.p_list[0][1], self.p_list[1][0], self.p_list[1][1]
+            item_pixels = alg.draw_polygon([[x_min, y_min], [x_min, y_max], [x_max, y_max], [x_max, y_min]],
+                                           'Bresenham')
         for p in item_pixels:
             painter.setPen(self.item_color)
             painter.drawPoint(*p)
@@ -343,7 +350,9 @@ class MyItem(QGraphicsItem):
                 painter.drawRect(self.boundingRect())
 
     def boundingRect(self) -> QRectF:  # mark
-        if self.item_type == 'line' or self.item_type == 'ellipse':
+        if self.p_list == []:
+            return QRectF(0, 0, 0, 0)
+        if self.item_type == 'line' or self.item_type == 'ellipse' or self.item_type == 'clip':
             x0, y0 = self.p_list[0]
             x1, y1 = self.p_list[1]
             x = min(x0, x1)
@@ -363,6 +372,8 @@ class MyItem(QGraphicsItem):
             return QRectF(x_min - 1, y_min - 1, x_max - x_min + 2, y_max - y_min + 2)
 
     def center(self):
+        if self.p_list == []:
+            return [0, 0]
         if self.item_type == 'line' or self.item_type == 'ellipse':
             x0, y0 = self.p_list[0]
             x1, y1 = self.p_list[1]
@@ -494,7 +505,11 @@ class MainWindow(QMainWindow):
         if ok1 and ok2:
             self.scene.setSceneRect(0, 0, num1, num2)
             self.canvas_widget.setFixedSize(num1, num2)
-            # 暂未清空画布
+            # 清空画布
+            self.canvas_widget.scene().clear()
+            self.list_widget.clear()
+            self.item_cnt = 0
+            self.canvas_widget.temp_id = self.get_id()
 
     # def save_canvas_action(self):
     #     options = QFileDialog.Options()
