@@ -2,6 +2,7 @@
 # -*- coding:utf-8 -*-
 
 import sys
+import math
 import cg_algorithms as alg
 from typing import Optional
 from PyQt5.QtWidgets import (
@@ -75,6 +76,18 @@ class MyCanvas(QGraphicsView):
         self.status = 'translate'
         self.temp_algorithm = algorithm
 
+    def start_rotate(self, algorithm):
+        self.status = 'rotate'
+        self.temp_algorithm = algorithm
+
+    def start_scale(self, algorithm):
+        self.status = 'scale'
+        self.temp_algorithm = algorithm
+
+    def start_clip(self, algorithm):
+        self.status = 'clip'
+        self.temp_algorithm = algorithm
+
     # mark
 
     def finish_draw(self):
@@ -100,7 +113,6 @@ class MyCanvas(QGraphicsView):
         self.updateScene([self.sceneRect()])
 
     def mousePressEvent(self, event: QMouseEvent) -> None:  # mark
-        # print("press")
         pos = self.mapToScene(event.localPos().toPoint())
         x = int(pos.x())
         y = int(pos.y())
@@ -137,25 +149,39 @@ class MyCanvas(QGraphicsView):
             self.scene().addItem(self.temp_item)
         elif self.status == 'translate':
             if self.selected_id != '':
-                self.temp_item = MyItem(self.selected_id, self.status, [x, y])
+                ori_p_list = self.item_dict[self.selected_id].p_list
+                self.temp_item = MyItem(self.selected_id, self.status, [[x, y], [x, y], ori_p_list])
+        elif self.status == 'rotate':
+            if self.selected_id != '':
+                cx, cy = self.item_dict[self.selected_id].center()
+                ori_p_list = self.item_dict[self.selected_id].p_list
+                self.temp_item = MyItem(self.selected_id, self.status, [[cx, cy], [x, y], [x, y], ori_p_list])
+        elif self.status == 'scale':
+            if self.selected_id != '':
+                cx, cy = self.item_dict[self.selected_id].center()
+                ori_p_list = self.item_dict[self.selected_id].p_list
+                self.temp_item = MyItem(self.selected_id, self.status, [[cx, cy], [x, y], [x, y], ori_p_list])
+        elif self.status == 'clip':
+            if self.selected_id != '' and self.item_dict[self.selected_id].item_type == 'line':
+                self.temp_item = MyItem(self.selected_id, self.status, [[x, y], [x, y]])
         self.updateScene([self.sceneRect()])
         super().mousePressEvent(event)
 
     def mouseDoubleClickEvent(self, event: QMouseEvent) -> None:  # 不解决双击会有很多问题
         # print("double click")
         self.double_click = 1
-        if self.status == 'polygon':
+        if self.status == 'polygon' and self.temp_item:
             self.temp_item.p_list[-1] = self.temp_item.p_list[0]
             self.temp_item.end = 1
             self.item_dict[self.temp_id] = self.temp_item
             self.list_widget.addItem(self.temp_id)
             self.finish_draw()
             self.updateScene([self.sceneRect()])
-        elif self.status == 'curve':
+        elif self.status == 'curve' and self.temp_item:
             self.item_dict[self.temp_id] = self.temp_item
             self.list_widget.addItem(self.temp_id)
             self.finish_draw()
-        elif self.status == 'polyline':
+        elif self.status == 'polyline' and self.temp_item:
             self.item_dict[self.temp_id] = self.temp_item
             self.list_widget.addItem(self.temp_id)
             self.finish_draw()
@@ -182,12 +208,41 @@ class MyCanvas(QGraphicsView):
             self.temp_item.p_list.append([x, y])
         elif self.status == 'translate':
             if self.selected_id != '':
-                print('p_list:', self.temp_item.p_list)
-                x0, y0 = self.temp_item.p_list
-                self.temp_item.p_list = [x, y]
+                x0, y0 = self.temp_item.p_list[0]
+                ori_p_list = self.temp_item.p_list[2]
+                self.temp_item.p_list[1] = [x, y]
                 dx, dy = int(x - x0), int(y - y0)
-                self.item_dict[self.selected_id].item_translate(dx, dy)
+                self.item_dict[self.selected_id].item_translate(ori_p_list, dx, dy)
                 self.updateScene([self.sceneRect()])
+        elif self.status == 'rotate':
+            if self.selected_id != '' and self.item_dict[self.selected_id].item_type != 'ellipse':
+                cx, cy = self.temp_item.p_list[0]
+                x0, y0 = self.temp_item.p_list[1]
+                ori_p_list = self.temp_item.p_list[3]
+                self.temp_item.p_list[2] = [x, y]
+                dx0, dy0, dx1, dy1 = x0 - cx, y0 - cy, x - cx, y - cy
+                if dx0 != 0 and dx1 != 0:
+                    r0, r1 = math.atan2(dy0, dx0), math.atan2(dy1, dx1)
+                    r = int((r1 - r0) * 180)
+                    self.item_dict[self.selected_id].item_rotate(ori_p_list, cx, cy, r)
+                    self.updateScene([self.sceneRect()])
+        elif self.status == 'scale':
+            if self.selected_id != '':
+                cx, cy = self.temp_item.p_list[0]
+                x0, y0 = self.temp_item.p_list[1]
+                ori_p_list = self.temp_item.p_list[3]
+                self.temp_item.p_list[2] = [x, y]
+                if x0 == cx:
+                    pass
+                    # print("嘤")
+                else:
+                    s = (x - cx) / (x0 - cx)
+                    self.item_dict[self.selected_id].item_scale(ori_p_list, cx, cy, s)
+                    self.updateScene([self.sceneRect()])
+        elif self.status == 'clip':
+            if self.selected_id != '' and self.item_dict[self.selected_id].item_type == 'line':
+                self.temp_item.p_list[1] = [x, y]
+
         self.updateScene([self.sceneRect()])
         super().mouseMoveEvent(event)
 
@@ -220,6 +275,17 @@ class MyCanvas(QGraphicsView):
             self.item_dict[self.temp_id] = self.temp_item
             self.list_widget.addItem(self.temp_id)
             self.finish_draw()
+        elif self.status == 'scale' or self.status == 'translate' or self.status == 'rotate':
+            if self.selected_id != '':
+                self.temp_item = None
+        elif self.status == 'clip':
+            if self.selected_id != '' and self.item_dict[self.selected_id].item_type == 'line':
+                x0, y0 = self.temp_item.p_list[0]
+                x1, y1 = self.temp_item.p_list[1]
+                x_min, y_min, x_max, y_max = min(x0, x1), min(y0, y1), max(x0, x1), max(y0, y1)
+                self.item_dict[self.selected_id].item_clip(x_min, y_min, x_max, y_max, self.temp_algorithm)
+                self.updateScene([self.sceneRect()])
+                self.temp_item = None
         super().mouseReleaseEvent(event)
 
 
@@ -251,6 +317,7 @@ class MyItem(QGraphicsItem):
 
     def paint(self, painter: QPainter, option: QStyleOptionGraphicsItem,
               widget: Optional[QWidget] = ...) -> None:  # mark
+        item_pixels = []
         if self.item_type == 'line':
             item_pixels = alg.draw_line(self.p_list, self.algorithm)
         elif self.item_type == 'polygon':
@@ -272,7 +339,8 @@ class MyItem(QGraphicsItem):
             painter.drawPoint(*p)
         if self.selected:
             painter.setPen(QColor(255, 0, 0))
-            painter.drawRect(self.boundingRect())
+            if self.p_list:
+                painter.drawRect(self.boundingRect())
 
     def boundingRect(self) -> QRectF:  # mark
         if self.item_type == 'line' or self.item_type == 'ellipse':
@@ -294,10 +362,33 @@ class MyItem(QGraphicsItem):
                 y_max = max(y_max, y)
             return QRectF(x_min - 1, y_min - 1, x_max - x_min + 2, y_max - y_min + 2)
 
-    def item_translate(self, dx: int, dy: int):
-        # print("before:", self.p_list, dx, dy)
-        self.p_list = alg.translate(self.p_list, dx, dy)
-        # print("after:", self.p_list)
+    def center(self):
+        if self.item_type == 'line' or self.item_type == 'ellipse':
+            x0, y0 = self.p_list[0]
+            x1, y1 = self.p_list[1]
+            return [(x0 + x1) / 2, (y0 + y1) / 2]
+        elif self.item_type == 'polygon' or self.item_type == 'polyline' or self.item_type == 'curve' \
+                or self.item_type == 'pencil':
+            x_min, y_min = self.p_list[0]
+            x_max, y_max = self.p_list[0]
+            for x, y in self.p_list:
+                x_min = min(x_min, x)
+                x_max = max(x_max, x)
+                y_min = min(y_min, y)
+                y_max = max(y_max, y)
+            return [(x_min + x_max) / 2, (y_min + y_max) / 2]
+
+    def item_translate(self, p_list, dx, dy):
+        self.p_list = alg.translate(p_list, dx, dy)
+
+    def item_rotate(self, p_list, cx, cy, r):
+        self.p_list = alg.rotate(p_list, cx, cy, r)
+
+    def item_scale(self, p_list, cx, cy, s):
+        self.p_list = alg.scale(p_list, cx, cy, s)
+
+    def item_clip(self, x_min, y_min, x_max, y_max, algorithm):
+        self.p_list = alg.clip(self.p_list, x_min, y_min, x_max, y_max, algorithm)
 
 
 class MainWindow(QMainWindow):
@@ -370,6 +461,10 @@ class MainWindow(QMainWindow):
         curve_bezier_act.triggered.connect(self.curve_bezier_action)
         curve_b_spline_act.triggered.connect(self.curve_b_spline_action)
         translate_act.triggered.connect(self.translate_action)
+        rotate_act.triggered.connect(self.rotate_action)
+        scale_act.triggered.connect(self.scale_action)
+        clip_liang_barsky_act.triggered.connect(self.clip_liang_barsky_action)
+        clip_cohen_sutherland_act.triggered.connect(self.clip_cohen_sutherland_action)
         self.list_widget.currentTextChanged.connect(self.canvas_widget.selection_changed)
 
         # 设置主窗口的布局
@@ -479,6 +574,22 @@ class MainWindow(QMainWindow):
     def translate_action(self):
         self.canvas_widget.start_translate('平移')
         self.statusBar().showMessage('平移')
+
+    def rotate_action(self):
+        self.canvas_widget.start_rotate('旋转')
+        self.statusBar().showMessage('旋转')
+
+    def scale_action(self):
+        self.canvas_widget.start_scale('缩放')
+        self.statusBar().showMessage('缩放')
+
+    def clip_liang_barsky_action(self):
+        self.canvas_widget.start_clip('Liang-Barsky')
+        self.statusBar().showMessage('线段裁剪')
+
+    def clip_cohen_sutherland_action(self):
+        self.canvas_widget.start_clip('Cohen-Sutherland')
+        self.statusBar().showMessage('线段裁剪')
 
 
 # mark
