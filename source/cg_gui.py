@@ -260,7 +260,7 @@ class MyCanvas(QGraphicsView):
             threshold = 10
             if abs(self.temp_item.p_list[-1][0] - self.temp_item.p_list[0][0]) + abs(
                     self.temp_item.p_list[-1][0] - self.temp_item.p_list[0][0]) <= threshold and len(
-                    self.temp_item.p_list) > 2:
+                self.temp_item.p_list) > 2:
                 self.temp_item.p_list[-1] = self.temp_item.p_list[0]
                 self.temp_item.end = 1
                 self.item_dict[self.temp_id] = self.temp_item
@@ -429,7 +429,7 @@ class MainWindow(QMainWindow):
         file_menu = menubar.addMenu('文件')
         set_pen_act = file_menu.addAction('设置画笔')
         reset_canvas_act = file_menu.addAction('重置画布')
-        # save_canvas_act = file_menu.addAction('保存画布')
+        save_canvas_act = file_menu.addAction('保存画布')
         exit_act = file_menu.addAction('退出')
         draw_menu = menubar.addMenu('绘制')
         pencil_act = draw_menu.addAction('铅笔')
@@ -458,7 +458,7 @@ class MainWindow(QMainWindow):
         # 连接信号和槽函数 mark
         set_pen_act.triggered.connect(self.set_pen_color_action)
         reset_canvas_act.triggered.connect(self.reset_canvas_action)
-        # save_canvas_act.triggered.connect(self.save_canvas_action)
+        save_canvas_act.triggered.connect(self.save_canvas_action)
         exit_act.triggered.connect(qApp.quit)
         pencil_act.triggered.connect(self.pencil_action)
         line_naive_act.triggered.connect(self.line_naive_action)
