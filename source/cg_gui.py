@@ -419,7 +419,7 @@ class MainWindow(QMainWindow):
         self.scene = QGraphicsScene(self)
         self.scene.setSceneRect(0, 0, 600, 600)
         self.canvas_widget = MyCanvas(self.scene, self)
-        self.canvas_widget.setFixedSize(600, 600)
+        self.canvas_widget.setFixedSize(600 + 10, 600 + 10)
         self.canvas_widget.main_window = self
         self.canvas_widget.list_widget = self.list_widget
         self.canvas_widget.temp_id = self.get_id()
@@ -504,21 +504,23 @@ class MainWindow(QMainWindow):
         num2, ok2 = QInputDialog.getInt(self, '获取高度', '输入您的高度(200～1000)', 1000, 200, 1000, 1)
         if ok1 and ok2:
             self.scene.setSceneRect(0, 0, num1, num2)
-            self.canvas_widget.setFixedSize(num1, num2)
+            self.canvas_widget.setFixedSize(num1 + 10, num2 + 10)
             # 清空画布
             self.canvas_widget.scene().clear()
             self.list_widget.clear()
             self.item_cnt = 0
             self.canvas_widget.temp_id = self.get_id()
 
-    # def save_canvas_action(self):
-    #     options = QFileDialog.Options()
-    #     options |= QFileDialog.DontUseNativeDialog
-    #     filename, ok = QFileDialog.getSaveFileName(self, "QFileDialog.getSaveFileName()", "",
-    #                                                "Pictures (*.bmp)", options=options)
-    #     if ok:
-    #         filename = filename + ".bmp"
-    #         print(filename)
+    def save_canvas_action(self):
+        options = QFileDialog.Options()
+        options |= QFileDialog.DontUseNativeDialog
+        filename, ok = QFileDialog.getSaveFileName(self, "QFileDialog.getSaveFileName()", "",
+                                                   "Pictures (*.bmp)", options=options)
+        if ok:
+            filename = filename + ".bmp"
+            # print(filename)
+            pix_map = self.canvas_widget.grab(self.canvas_widget.sceneRect().toRect())
+            pix_map.save(filename)
 
     def line_naive_action(self):
         self.canvas_widget.start_draw_line('Naive')
