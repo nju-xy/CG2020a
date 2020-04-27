@@ -182,6 +182,10 @@ def draw_ellipse(p_list):
         else:
             x, y = x + 1, y - 1
             p2 = p2 + 2 * ry * ry * x - 2 * rx * rx * y + rx * rx
+    while x <= rx:
+        result.append([int(cx + x), cy])
+        result.append([int(cx - x), cy])
+        x = x + 1
     return result
 
 
@@ -196,8 +200,10 @@ def draw_curve(p_list, algorithm):
     n = len(p_list) - 1  # n次Bezier曲线, n+1个控制点
     if algorithm == "Bezier":
         u = 0
-        step = 0.00005
+        # step = 0.00005
+        step = 0.001
         p = []
+        points = []
         for i in range(0, n + 1):
             p.append([p_list[i][0], p_list[i][1]])
         while u <= 1:
@@ -209,11 +215,21 @@ def draw_curve(p_list, algorithm):
                     p[i][0] = (1 - u) * p[i][0] + u * p[i + 1][0]
                     p[i][1] = (1 - u) * p[i][1] + u * p[i + 1][1]
             u = u + step
-            result.append([int(p[0][0]), int(p[0][1])])
+            # result.append([int(p[0][0]), int(p[0][1])])
+            if len(points) == 0:
+                result.append([int(p[0][0]), int(p[0][1])])
+            else:
+                result += draw_line([points[-1], [int(p[0][0]), int(p[0][1])]], 'Bresenham')
+            points.append([int(p[0][0]), int(p[0][1])])
+        # print(result)
         return result
     elif algorithm == "B-spline":  # 三次均匀B样条曲线, 4阶. k = 3
-        step = 0.0001
+        # step = 0.0001
+        if n < 3:
+            return []
+        step = (n - 2) / 1000
         u = 3
+        points = []
         while u <= n + 1:
             # P(u) = sum_{i=0}^n P[i]B[i][4](u), u in [k, n+1]
             # 首先计算B[i][1]: (0 <= i <= n + k) 即0 <= i <= n + 3
@@ -235,7 +251,12 @@ def draw_curve(p_list, algorithm):
                 x = x + p_list[i][0] * b[i]
                 y = y + p_list[i][1] * b[i]
             u = u + step
-            result.append([int(x), int(y)])
+            # result.append([int(x), int(y)])
+            if len(points) == 0:
+                result.append([int(x), int(y)])
+            else:
+                result += draw_line([points[-1], [int(x), int(y)]], 'Bresenham')
+            points.append([int(x), int(y)])
         return result
 
 
