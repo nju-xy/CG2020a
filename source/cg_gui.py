@@ -39,6 +39,7 @@ class MyCanvas(QGraphicsView):
         self.temp_algorithm = ''
         self.temp_id = ''
         self.temp_item = None
+        self.assist_item = None
         self.double_click = 0
         self.pen_color = QColor(0, 0, 0)
 
@@ -128,9 +129,12 @@ class MyCanvas(QGraphicsView):
                 self.temp_item.p_list.append([x, y])
         elif self.status == 'curve':
             if self.temp_item is None:
-                self.temp_item = MyItem(self.temp_id, self.status, [[x, y], [x, y]],
+                self.temp_item = MyItem(self.temp_id, self.status, [[x, y]],
                                         self.temp_algorithm, self.pen_color)
                 self.scene().addItem(self.temp_item)
+                self.assist_item = MyItem(self.selected_id, 'polyline', self.temp_item.p_list, 'Bresenham',
+                                          QColor(255, 0, 0))
+                self.scene().addItem(self.assist_item)
             else:
                 self.temp_item.p_list.append([x, y])
         elif self.status == 'polyline':
@@ -163,9 +167,9 @@ class MyCanvas(QGraphicsView):
                 self.temp_item = MyItem(self.selected_id, self.status, [[cx, cy], [x, y], [x, y], ori_p_list])
         elif self.status == 'clip':
             if self.selected_id != '' and self.item_dict[self.selected_id].item_type == 'line':
-                self.temp_item = MyItem(self.selected_id, self.status, [[x, y], [x, y]], self.temp_algorithm,
-                                        QColor(255, 0, 0))
-                self.scene().addItem(self.temp_item)
+                self.assist_item = MyItem(self.selected_id, self.status, [[x, y], [x, y]], self.temp_algorithm,
+                                          QColor(255, 0, 0))
+                self.scene().addItem(self.assist_item)
         self.updateScene([self.sceneRect()])
         super().mousePressEvent(event)
 
@@ -180,8 +184,12 @@ class MyCanvas(QGraphicsView):
             self.finish_draw()
             self.updateScene([self.sceneRect()])
         elif self.status == 'curve' and self.temp_item:
+            # print(self.temp_item.p_list)
             self.item_dict[self.temp_id] = self.temp_item
             self.list_widget.addItem(self.temp_id)
+            self.scene().removeItem(self.assist_item)
+            self.updateScene([self.sceneRect()])
+            self.assist_item = None
             self.finish_draw()
         elif self.status == 'polyline' and self.temp_item:
             self.item_dict[self.temp_id] = self.temp_item
@@ -203,7 +211,7 @@ class MyCanvas(QGraphicsView):
         elif self.status == 'ellipse':
             self.temp_item.p_list[1] = [x, y]
         elif self.status == 'curve':
-            self.temp_item.p_list[-1] = [x, y]
+            pass
         elif self.status == 'polyline':
             self.temp_item.p_list[-1] = [x, y]
         elif self.status == 'pencil':
@@ -243,7 +251,7 @@ class MyCanvas(QGraphicsView):
                     self.updateScene([self.sceneRect()])
         elif self.status == 'clip':
             if self.selected_id != '' and self.item_dict[self.selected_id].item_type == 'line':
-                self.temp_item.p_list[1] = [x, y]
+                self.assist_item.p_list[1] = [x, y]
         self.updateScene([self.sceneRect()])
         super().mouseMoveEvent(event)
 
@@ -260,7 +268,7 @@ class MyCanvas(QGraphicsView):
             threshold = 10
             if abs(self.temp_item.p_list[-1][0] - self.temp_item.p_list[0][0]) + abs(
                     self.temp_item.p_list[-1][0] - self.temp_item.p_list[0][0]) <= threshold and len(
-                self.temp_item.p_list) > 2:
+                    self.temp_item.p_list) > 2:
                 self.temp_item.p_list[-1] = self.temp_item.p_list[0]
                 self.temp_item.end = 1
                 self.item_dict[self.temp_id] = self.temp_item
@@ -282,13 +290,13 @@ class MyCanvas(QGraphicsView):
                 self.temp_item = None
         elif self.status == 'clip':
             if self.selected_id != '' and self.item_dict[self.selected_id].item_type == 'line':
-                x0, y0 = self.temp_item.p_list[0]
-                x1, y1 = self.temp_item.p_list[1]
+                x0, y0 = self.assist_item.p_list[0]
+                x1, y1 = self.assist_item.p_list[1]
                 x_min, y_min, x_max, y_max = min(x0, x1), min(y0, y1), max(x0, x1), max(y0, y1)
                 self.item_dict[self.selected_id].item_clip(x_min, y_min, x_max, y_max, self.temp_algorithm)
-                self.scene().removeItem(self.temp_item)
+                self.scene().removeItem(self.assist_item)
                 self.updateScene([self.sceneRect()])
-                self.temp_item = None
+                self.assist_item = None
         super().mouseReleaseEvent(event)
 
 
@@ -500,8 +508,8 @@ class MainWindow(QMainWindow):
             self.canvas_widget.pen_color = color
 
     def reset_canvas_action(self):
-        num1, ok1 = QInputDialog.getInt(self, '获取宽度', '输入您的宽度(200～1000)', 1000, 200, 1000, 1)
-        num2, ok2 = QInputDialog.getInt(self, '获取高度', '输入您的高度(200～1000)', 1000, 200, 1000, 1)
+        num1, ok1 = QInputDialog.getInt(self, '获取宽度', '输入您的宽度(100～1000)', 600, 100, 1000, 1)
+        num2, ok2 = QInputDialog.getInt(self, '获取高度', '输入您的高度(100～1000)', 600, 100, 1000, 1)
         if ok1 and ok2:
             self.scene.setSceneRect(0, 0, num1, num2)
             self.canvas_widget.setFixedSize(num1 + 10, num2 + 10)

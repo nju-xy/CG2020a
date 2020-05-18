@@ -189,11 +189,12 @@ def draw_ellipse(p_list):
     return result
 
 
-def draw_curve(p_list, algorithm):
+def draw_curve(p_list, algorithm, n_steps=1000):
     """绘制曲线
 
     :param p_list: (list of list of int: [[x0, y0], [x1, y1], [x2, y2], ...]) 曲线的控制点坐标列表
     :param algorithm: (string) 绘制使用的算法，包括'Bezier'和'B-spline'（三次均匀B样条曲线，曲线不必经过首末控制点）
+    :param n_steps: (int) 采样的点的个数
     :return: (list of list of int: [[x_0, y_0], [x_1, y_1], [x_2, y_2], ...]) 绘制结果的像素点坐标列表
     """
     result = []
@@ -201,7 +202,7 @@ def draw_curve(p_list, algorithm):
     if algorithm == "Bezier":
         u = 0
         # step = 0.00005
-        step = 0.001
+        step = 1 / n_steps  # 默认0.001
         p = []
         points = []
         for i in range(0, n + 1):
@@ -227,7 +228,7 @@ def draw_curve(p_list, algorithm):
         # step = 0.0001
         if n < 3:
             return []
-        step = (n - 2) / 1000
+        step = (n - 2) / n_steps  # 默认1000
         u = 3
         points = []
         while u <= n + 1:

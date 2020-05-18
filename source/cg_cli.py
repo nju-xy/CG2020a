@@ -40,23 +40,28 @@ if __name__ == '__main__':
                     if item_type == 'line':
                         pixels = alg.draw_line(p_list, algorithm)
                         for x, y in pixels:
-                            canvas[y, x] = color
+                            # canvas[y, x] = color
+                            canvas[height - 1 - y, x] = color
                     elif item_type == 'polygon':
                         pixels = alg.draw_polygon(p_list, algorithm)
                         for x, y in pixels:
-                            canvas[y, x] = color
+                            # canvas[y, x] = color
+                            canvas[height - 1 - y, x] = color
                     elif item_type == 'polyline':
                         pixels = alg.draw_polyline(p_list, algorithm)
                         for x, y in pixels:
-                            canvas[y, x] = color
+                            # canvas[y, x] = color
+                            canvas[height - 1 - y, x] = color
                     elif item_type == 'ellipse':
                         pixels = alg.draw_ellipse(p_list)
                         for x, y in pixels:
-                            canvas[y, x] = color
+                            # canvas[y, x] = color
+                            canvas[height - 1 - y, x] = color
                     elif item_type == 'curve':
-                        pixels = alg.draw_curve(p_list, algorithm)
+                        pixels = alg.draw_curve(p_list, algorithm, 5000)
                         for x, y in pixels:
-                            canvas[y, x] = color
+                            # canvas[y, x] = color
+                            canvas[height - 1 - y, x] = color
                 Image.fromarray(canvas).save(os.path.join(output_dir, save_name + '.bmp'), 'bmp')
             elif line[0] == 'setColor':
                 if n != 4:
@@ -160,7 +165,7 @@ if __name__ == '__main__':
                     print("第", lineno, "行错误：禁止对椭圆进行旋转")
                 else:
                     p_list = item_dict[item_id][1]
-                    item_dict[item_id][1] = alg.rotate(p_list, x, y, r)
+                    item_dict[item_id][1] = alg.rotate(p_list, x, y, -r)
             elif line[0] == 'scale':
                 if n != 5:
                     print("第", lineno, "行错误：scale参数数量错误")
