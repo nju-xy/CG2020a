@@ -85,6 +85,11 @@ class MyCanvas(QGraphicsView):
         self.status = 'scale'
         self.temp_algorithm = algorithm
 
+    def start_delete(self):
+        if self.selected_id != '':
+            self.scene().removeItem(self.item_dict[self.selected_id])
+            self.updateScene([self.sceneRect()])
+
     def start_clip(self, algorithm):
         self.status = 'clip'
         self.temp_algorithm = algorithm
@@ -102,7 +107,7 @@ class MyCanvas(QGraphicsView):
             self.selected_id = ''
 
     def selection_changed(self, selected):
-        # print('selection_changed')
+        # print('selection_changed(', self.selected_id, ')end')
         self.main_window.statusBar().showMessage('图元选择： %s' % selected)
         if self.selected_id != '':
             self.item_dict[self.selected_id].selected = False
@@ -462,6 +467,7 @@ class MainWindow(QMainWindow):
         clip_menu = edit_menu.addMenu('裁剪')
         clip_cohen_sutherland_act = clip_menu.addAction('Cohen-Sutherland')
         clip_liang_barsky_act = clip_menu.addAction('Liang-Barsky')
+        delete_act = edit_menu.addAction('删除')
 
         # 连接信号和槽函数 mark
         set_pen_act.triggered.connect(self.set_pen_color_action)
@@ -482,6 +488,7 @@ class MainWindow(QMainWindow):
         translate_act.triggered.connect(self.translate_action)
         rotate_act.triggered.connect(self.rotate_action)
         scale_act.triggered.connect(self.scale_action)
+        delete_act.triggered.connect(self.delete_action)
         clip_liang_barsky_act.triggered.connect(self.clip_liang_barsky_action)
         clip_cohen_sutherland_act.triggered.connect(self.clip_cohen_sutherland_action)
         self.list_widget.currentTextChanged.connect(self.canvas_widget.selection_changed)
@@ -511,13 +518,21 @@ class MainWindow(QMainWindow):
         num1, ok1 = QInputDialog.getInt(self, '获取宽度', '输入您的宽度(100～1000)', 600, 100, 1000, 1)
         num2, ok2 = QInputDialog.getInt(self, '获取高度', '输入您的高度(100～1000)', 600, 100, 1000, 1)
         if ok1 and ok2:
-            self.scene.setSceneRect(0, 0, num1, num2)
-            self.canvas_widget.setFixedSize(num1 + 10, num2 + 10)
             # 清空画布
-            self.canvas_widget.scene().clear()
+            # print(1)
+            # self.list_widget.clearSelection()
+            # self.canvas_widget.clear_selection()
+            # self.canvas_widget.scene().clear()
+            self.list_widget.disconnect()
             self.list_widget.clear()
+            self.canvas_widget.scene().clear()
+            self.list_widget.currentTextChanged.connect(self.canvas_widget.selection_changed)
             self.item_cnt = 0
             self.canvas_widget.temp_id = self.get_id()
+            # print(2)
+            # 更改画布大小
+            self.scene.setSceneRect(0, 0, num1, num2)
+            self.canvas_widget.setFixedSize(num1 + 10, num2 + 10)
 
     def save_canvas_action(self):
         options = QFileDialog.Options()
@@ -607,6 +622,10 @@ class MainWindow(QMainWindow):
     def scale_action(self):
         self.canvas_widget.start_scale('缩放')
         self.statusBar().showMessage('缩放')
+
+    def delete_action(self):
+        self.canvas_widget.start_delete()
+        self.statusBar().showMessage('删除')
 
     def clip_liang_barsky_action(self):
         self.canvas_widget.start_clip('Liang-Barsky')

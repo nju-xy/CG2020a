@@ -158,7 +158,7 @@ def draw_ellipse(p_list):
     result.append([int(cx - x), int(cy - y)])
     p1 = ry * ry - rx * rx * ry + rx * rx / 4
     while rx * rx * y > ry * ry * x:
-        print('1:', x, y, p1)
+        # print('1:', x, y, p1)
         result.append([int(cx + x), int(cy + y)])
         result.append([int(cx - x), int(cy + y)])
         result.append([int(cx + x), int(cy - y)])
@@ -171,7 +171,7 @@ def draw_ellipse(p_list):
             p1 = p1 + 2 * ry * ry * x - 2 * rx * rx * y + ry * ry
     p2 = ry * ry * (x + 1 / 2) * (x + 1 / 2) + rx * rx * (y - 1) * (y - 1) - rx * rx * ry * ry
     while y >= 0:
-        print('2:', x, y, p2)
+        # print('2:', x, y, p2)
         result.append([int(cx + x), int(cy + y)])
         result.append([int(cx - x), int(cy + y)])
         result.append([int(cx + x), int(cy - y)])
