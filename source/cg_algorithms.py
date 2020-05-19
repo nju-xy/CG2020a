@@ -183,8 +183,8 @@ def draw_ellipse(p_list):
             x, y = x + 1, y - 1
             p2 = p2 + 2 * ry * ry * x - 2 * rx * rx * y + rx * rx
     while x <= rx:
-        result.append([int(cx + x), cy])
-        result.append([int(cx - x), cy])
+        result.append([int(cx + x), int(cy)])
+        result.append([int(cx - x), int(cy)])
         x = x + 1
     return result
 

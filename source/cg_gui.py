@@ -247,11 +247,11 @@ class MyCanvas(QGraphicsView):
                 x0, y0 = self.temp_item.p_list[1]
                 ori_p_list = self.temp_item.p_list[3]
                 self.temp_item.p_list[2] = [x, y]
-                if x0 == cx:
+                if x0 == cx and y0 == cy:
                     pass
-                    # print("嘤")
                 else:
-                    s = (x - cx) / (x0 - cx)
+                    s = ((x - cx) * (x - cx) + (y - cy) * (y - cy)) / ((x0 - cx) * (x0 - cx) + (y0 - cy) * (y0 - cy))
+                    s = math.sqrt(s)
                     self.item_dict[self.selected_id].item_scale(ori_p_list, cx, cy, s)
                     self.updateScene([self.sceneRect()])
         elif self.status == 'clip':
@@ -334,10 +334,9 @@ class MyItem(QGraphicsItem):
     def paint(self, painter: QPainter, option: QStyleOptionGraphicsItem,
               widget: Optional[QWidget] = ...) -> None:  # mark
         item_pixels = []
-        if self.item_type == 'line':
+        if self.item_type == 'line' and self.p_list:
             item_pixels = alg.draw_line(self.p_list, self.algorithm)
         elif self.item_type == 'polygon':
-            # print("paint")
             if self.end == 1:
                 item_pixels = alg.draw_polygon(self.p_list, self.algorithm)
             else:
@@ -412,7 +411,8 @@ class MyItem(QGraphicsItem):
         self.p_list = alg.scale(p_list, cx, cy, s)
 
     def item_clip(self, x_min, y_min, x_max, y_max, algorithm):
-        self.p_list = alg.clip(self.p_list, x_min, y_min, x_max, y_max, algorithm)
+        if self.p_list:
+            self.p_list = alg.clip(self.p_list, x_min, y_min, x_max, y_max, algorithm)
 
 
 class MainWindow(QMainWindow):
@@ -523,6 +523,8 @@ class MainWindow(QMainWindow):
             # self.list_widget.clearSelection()
             # self.canvas_widget.clear_selection()
             # self.canvas_widget.scene().clear()
+            if self.canvas_widget.status != '':
+                self.canvas_widget.finish_draw()
             self.list_widget.disconnect()
             self.list_widget.clear()
             self.canvas_widget.scene().clear()
@@ -634,9 +636,6 @@ class MainWindow(QMainWindow):
     def clip_cohen_sutherland_action(self):
         self.canvas_widget.start_clip('Cohen-Sutherland')
         self.statusBar().showMessage('线段裁剪')
-
-
-# mark
 
 
 if __name__ == '__main__':

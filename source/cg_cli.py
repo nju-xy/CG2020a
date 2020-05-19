@@ -25,6 +25,8 @@ if __name__ == '__main__':
             line = line.strip().split(' ')
             lineno = lineno + 1
             n = len(line)
+            if line[0] == '':
+                continue
             if line[0] == 'resetCanvas':
                 width = int(line[1])
                 height = int(line[2])
@@ -40,28 +42,34 @@ if __name__ == '__main__':
                     if item_type == 'line':
                         pixels = alg.draw_line(p_list, algorithm)
                         for x, y in pixels:
-                            # canvas[y, x] = color
-                            canvas[height - 1 - y, x] = color
+                            if 0 <= y < height and 0 <= x < width:
+                                # canvas[y, x] = color
+                                canvas[height - 1 - y, x] = color
                     elif item_type == 'polygon':
                         pixels = alg.draw_polygon(p_list, algorithm)
                         for x, y in pixels:
-                            # canvas[y, x] = color
-                            canvas[height - 1 - y, x] = color
+                            if 0 <= y < height and 0 <= x < width:
+                                # canvas[y, x] = color
+                                canvas[height - 1 - y, x] = color
                     elif item_type == 'polyline':
                         pixels = alg.draw_polyline(p_list, algorithm)
                         for x, y in pixels:
-                            # canvas[y, x] = color
-                            canvas[height - 1 - y, x] = color
+                            if 0 <= y < height and 0 <= x < width:
+                                # canvas[y, x] = color
+                                canvas[height - 1 - y, x] = color
                     elif item_type == 'ellipse':
                         pixels = alg.draw_ellipse(p_list)
                         for x, y in pixels:
-                            # canvas[y, x] = color
-                            canvas[height - 1 - y, x] = color
+                            if 0 <= y < height and 0 <= x < width:
+                                # canvas[y, x] = color
+                                # print(height - 1 - y, x)
+                                canvas[height - 1 - y, x] = color
                     elif item_type == 'curve':
                         pixels = alg.draw_curve(p_list, algorithm, 5000)
                         for x, y in pixels:
-                            # canvas[y, x] = color
-                            canvas[height - 1 - y, x] = color
+                            if 0 <= y < height and 0 <= x < width:
+                                # canvas[y, x] = color
+                                canvas[height - 1 - y, x] = color
                 Image.fromarray(canvas).save(os.path.join(output_dir, save_name + '.bmp'), 'bmp')
             elif line[0] == 'setColor':
                 if n != 4:
