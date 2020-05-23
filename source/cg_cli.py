@@ -22,7 +22,7 @@ if __name__ == '__main__':
         # line = fp.readline()
         # while line:
         for line in fp:
-            line = line.strip().split(' ')
+            line = line.strip().split()
             lineno = lineno + 1
             n = len(line)
             if line[0] == '':

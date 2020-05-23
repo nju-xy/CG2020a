@@ -402,15 +402,19 @@ class MyItem(QGraphicsItem):
             return [(x_min + x_max) / 2, (y_min + y_max) / 2]
 
     def item_translate(self, p_list, dx, dy):
+        self.prepareGeometryChange()
         self.p_list = alg.translate(p_list, dx, dy)
 
     def item_rotate(self, p_list, cx, cy, r):
+        self.prepareGeometryChange()
         self.p_list = alg.rotate(p_list, cx, cy, r)
 
     def item_scale(self, p_list, cx, cy, s):
+        self.prepareGeometryChange()
         self.p_list = alg.scale(p_list, cx, cy, s)
 
     def item_clip(self, x_min, y_min, x_max, y_max, algorithm):
+        self.prepareGeometryChange()
         if self.p_list:
             self.p_list = alg.clip(self.p_list, x_min, y_min, x_max, y_max, algorithm)
 

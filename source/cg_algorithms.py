@@ -203,11 +203,16 @@ def draw_curve(p_list, algorithm, n_steps=1000):
         u = 0
         # step = 0.00005
         step = 1 / n_steps  # 默认0.001
-        p = []
         points = []
-        for i in range(0, n + 1):
-            p.append([p_list[i][0], p_list[i][1]])
-        while u <= 1:
+        # p = []
+        # for i in range(0, n + 1):
+        #     p.append([p_list[i][0], p_list[i][1]])
+        # while u <= 1:
+        for t in range(0, n_steps + 1):
+            u = t / n_steps
+            p = []
+            for i in range(0, n + 1):
+                p.append([p_list[i][0], p_list[i][1]])
             # 使用de Casteljau算法,
             # P[i][r] = (1 - u) P[i][r - 1] + u P[i + 1][r - 1]
             # 曲线上的点为P(u) = P[0][n]
@@ -215,7 +220,7 @@ def draw_curve(p_list, algorithm, n_steps=1000):
                 for i in range(0, n - r + 1):
                     p[i][0] = (1 - u) * p[i][0] + u * p[i + 1][0]
                     p[i][1] = (1 - u) * p[i][1] + u * p[i + 1][1]
-            u = u + step
+            # u = u + step
             # result.append([int(p[0][0]), int(p[0][1])])
             if len(points) == 0:
                 result.append([int(p[0][0]), int(p[0][1])])
