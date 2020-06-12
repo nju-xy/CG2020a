@@ -19,8 +19,8 @@ from PyQt5.QtWidgets import (
     QHBoxLayout,
     QWidget,
     QStyleOptionGraphicsItem)
-from PyQt5.QtGui import QPainter, QMouseEvent, QColor
-from PyQt5.QtCore import QRectF
+from PyQt5.QtGui import QPainter, QMouseEvent, QColor, QPen
+from PyQt5.QtCore import QRectF, Qt
 
 
 class MyCanvas(QGraphicsView):
@@ -42,6 +42,7 @@ class MyCanvas(QGraphicsView):
         self.assist_item = None
         self.double_click = 0
         self.pen_color = QColor(0, 0, 0)
+        self.pen_width = 1
 
     def start_draw_line(self, algorithm):
         self.status = 'line'
@@ -123,19 +124,20 @@ class MyCanvas(QGraphicsView):
         x = int(pos.x())
         y = int(pos.y())
         if self.status == 'line':
-            self.temp_item = MyItem(self.temp_id, self.status, [[x, y], [x, y]], self.temp_algorithm, self.pen_color)
+            self.temp_item = MyItem(self.temp_id, self.status, [[x, y], [x, y]], self.temp_algorithm, self.pen_color,
+                                    self.pen_width)
             self.scene().addItem(self.temp_item)
         elif self.status == 'polygon':
             if self.temp_item is None:
                 self.temp_item = MyItem(self.temp_id, self.status, [[x, y], [x, y]],
-                                        self.temp_algorithm, self.pen_color, 0)
+                                        self.temp_algorithm, self.pen_color, self.pen_width, 0)
                 self.scene().addItem(self.temp_item)
             else:
                 self.temp_item.p_list.append([x, y])
         elif self.status == 'curve':
             if self.temp_item is None:
                 self.temp_item = MyItem(self.temp_id, self.status, [[x, y]],
-                                        self.temp_algorithm, self.pen_color)
+                                        self.temp_algorithm, self.pen_color, self.pen_width)
                 self.scene().addItem(self.temp_item)
                 self.assist_item = MyItem(self.selected_id, 'polyline', self.temp_item.p_list, 'Bresenham',
                                           QColor(255, 0, 0))
@@ -145,16 +147,17 @@ class MyCanvas(QGraphicsView):
         elif self.status == 'polyline':
             if self.temp_item is None:
                 self.temp_item = MyItem(self.temp_id, self.status, [[x, y], [x, y]],
-                                        self.temp_algorithm, self.pen_color)
+                                        self.temp_algorithm, self.pen_color, self.pen_width)
                 self.scene().addItem(self.temp_item)
             else:
                 self.temp_item.p_list.append([x, y])
         elif self.status == 'pencil':
             self.temp_item = MyItem(self.temp_id, self.status, [[x, y], [x, y]],
-                                    self.temp_algorithm, self.pen_color)
+                                    self.temp_algorithm, self.pen_color, self.pen_width)
             self.scene().addItem(self.temp_item)
         elif self.status == 'ellipse':
-            self.temp_item = MyItem(self.temp_id, self.status, [[x, y], [x, y]], self.temp_algorithm, self.pen_color)
+            self.temp_item = MyItem(self.temp_id, self.status, [[x, y], [x, y]], self.temp_algorithm, self.pen_color,
+                                    self.pen_width)
             self.scene().addItem(self.temp_item)
         elif self.status == 'translate':
             if self.selected_id != '':
@@ -273,7 +276,7 @@ class MyCanvas(QGraphicsView):
             threshold = 10
             if abs(self.temp_item.p_list[-1][0] - self.temp_item.p_list[0][0]) + abs(
                     self.temp_item.p_list[-1][0] - self.temp_item.p_list[0][0]) <= threshold and len(
-                    self.temp_item.p_list) > 2:
+                self.temp_item.p_list) > 2:
                 self.temp_item.p_list[-1] = self.temp_item.p_list[0]
                 self.temp_item.end = 1
                 self.item_dict[self.temp_id] = self.temp_item
@@ -311,7 +314,7 @@ class MyItem(QGraphicsItem):
     """
 
     def __init__(self, item_id: str, item_type: str, p_list: list, algorithm: str = '',
-                 item_color: QColor = QColor(0, 0, 0), end: int = 0,
+                 item_color: QColor = QColor(0, 0, 0), pen_width: int = 1, end: int = 0,
                  parent: QGraphicsItem = None):
         """
 
@@ -330,6 +333,7 @@ class MyItem(QGraphicsItem):
         self.selected = False
         self.end = end
         self.item_color = item_color
+        self.pen_width = pen_width
 
     def paint(self, painter: QPainter, option: QStyleOptionGraphicsItem,
               widget: Optional[QWidget] = ...) -> None:  # mark
@@ -354,7 +358,9 @@ class MyItem(QGraphicsItem):
             item_pixels = alg.draw_polygon([[x_min, y_min], [x_min, y_max], [x_max, y_max], [x_max, y_min]],
                                            'Bresenham')
         for p in item_pixels:
-            painter.setPen(self.item_color)
+            # painter.setPen(self.item_color)
+            pen = QPen(self.item_color, self.pen_width, Qt.SolidLine)
+            painter.setPen(pen)
             painter.drawPoint(*p)
         if self.selected:
             painter.setPen(QColor(255, 0, 0))
@@ -444,7 +450,10 @@ class MainWindow(QMainWindow):
         # 设置菜单栏
         menubar = self.menuBar()
         file_menu = menubar.addMenu('文件')
-        set_pen_act = file_menu.addAction('设置画笔')
+        # set_pen_act = file_menu.addAction('设置画笔')
+        set_pen_act = file_menu.addMenu('设置画笔')
+        set_pen_color_act = set_pen_act.addAction('设置颜色')
+        set_pen_width_act = set_pen_act.addAction('设置粗细')
         reset_canvas_act = file_menu.addAction('重置画布')
         save_canvas_act = file_menu.addAction('保存画布')
         exit_act = file_menu.addAction('退出')
@@ -474,7 +483,9 @@ class MainWindow(QMainWindow):
         delete_act = edit_menu.addAction('删除')
 
         # 连接信号和槽函数 mark
-        set_pen_act.triggered.connect(self.set_pen_color_action)
+        # set_pen_act.triggered.connect(self.set_pen_color_action)
+        set_pen_color_act.triggered.connect(self.set_pen_color_action)
+        set_pen_width_act.triggered.connect(self.set_pen_width_action)
         reset_canvas_act.triggered.connect(self.reset_canvas_action)
         save_canvas_act.triggered.connect(self.save_canvas_action)
         exit_act.triggered.connect(qApp.quit)
@@ -517,6 +528,11 @@ class MainWindow(QMainWindow):
         color = QColorDialog.getColor()
         if color.isValid:  # 通过isValid()可以判断用户选择的颜色是否有效，若用户选择取消，isValid()将返回false
             self.canvas_widget.pen_color = color
+
+    def set_pen_width_action(self):
+        num1, ok1 = QInputDialog.getInt(self, '设置画笔宽度', '输入您的宽度(1～10)', 1, 1, 10, 1)
+        if ok1:  # 通过isValid()可以判断用户选择的颜色是否有效，若用户选择取消，isValid()将返回false
+            self.canvas_widget.pen_width = num1
 
     def reset_canvas_action(self):
         num1, ok1 = QInputDialog.getInt(self, '获取宽度', '输入您的宽度(100～1000)', 600, 100, 1000, 1)
