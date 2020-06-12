@@ -200,9 +200,9 @@ def draw_curve(p_list, algorithm, n_steps=1000):
     result = []
     n = len(p_list) - 1  # n次Bezier曲线, n+1个控制点
     if algorithm == "Bezier":
-        u = 0
+        # u = 0
         # step = 0.00005
-        step = 1 / n_steps  # 默认0.001
+        # step = 1 / n_steps  # 默认0.001
         points = []
         # p = []
         # for i in range(0, n + 1):
