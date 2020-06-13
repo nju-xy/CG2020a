@@ -35,7 +35,7 @@ class MyCanvas(QGraphicsView):
         self.item_dict = {}
         self.selected_id = ''
 
-        self.last_act = None
+        self.action_stack = []
         self.status = ''
         self.drawing = 0
         self.temp_algorithm = ''
@@ -110,27 +110,30 @@ class MyCanvas(QGraphicsView):
 
     def start_delete(self):
         if self.drawing == 0 and self.selected_id != '':
-            self.last_act = ['delete', self.selected_id]
+            last_act = ['delete', self.selected_id]
+            self.action_stack.append(last_act)
             self.scene().removeItem(self.item_dict[self.selected_id])
             # self.list_widget.takeItem(int(self.selected_id))
             self.updateScene([self.sceneRect()])
 
     def start_undo(self):
-        if self.last_act:
-            if self.last_act[0] == "translate" or self.last_act[0] == "scale" or self.last_act[0] == "rotate" or \
-                    self.last_act[0] == "clip":
-                last_id, last_p_list = self.last_act[1], self.last_act[2]
+        if len(self.action_stack):
+            last_act = self.action_stack[-1]
+            self.action_stack.pop(-1)
+            if last_act[0] == "translate" or last_act[0] == "scale" or last_act[0] == "rotate" or \
+                    last_act[0] == "clip":
+                last_id, last_p_list = last_act[1], last_act[2]
                 last_item = self.item_dict[last_id]
                 # self.scene().removeItem(self.item_dict[last_id])
                 last_item.p_list = last_p_list
                 self.updateScene([self.sceneRect()])
-            elif self.last_act[0] == "delete":
-                last_id = self.last_act[1]
+            elif last_act[0] == "delete":
+                last_id = last_act[1]
                 self.scene().addItem(self.item_dict[last_id])
                 self.updateScene([self.sceneRect()])
-            elif self.last_act[0] == "line" or self.last_act[0] == "polygon" or self.last_act[0] == "polyline" or \
-                    self.last_act[0] == "curve" or self.last_act[0] == "pencil" or self.last_act[0] == "ellipse":
-                last_id = self.last_act[1]
+            elif last_act[0] == "line" or last_act[0] == "polygon" or last_act[0] == "polyline" or \
+                    last_act[0] == "curve" or last_act[0] == "pencil" or last_act[0] == "ellipse":
+                last_id = last_act[1]
                 self.scene().removeItem(self.item_dict[last_id])
                 self.list_widget.takeItem(int(last_id))
                 self.main_window.delete_id()
@@ -170,13 +173,15 @@ class MyCanvas(QGraphicsView):
             self.temp_item = MyItem(self.temp_id, self.status, [[x, y], [x, y]], self.temp_algorithm, self.pen_color,
                                     self.pen_width)
             self.scene().addItem(self.temp_item)
-            self.last_act = ['line', self.temp_id]
+            last_act = ['line', self.temp_id]
+            self.action_stack.append(last_act)
         elif self.status == 'polygon':
             if self.temp_item is None:
                 self.temp_item = MyItem(self.temp_id, self.status, [[x, y], [x, y]],
                                         self.temp_algorithm, self.pen_color, self.pen_width, 0)
                 self.scene().addItem(self.temp_item)
-                self.last_act = ['polygon', self.temp_id]
+                last_act = ['polygon', self.temp_id]
+                self.action_stack.append(last_act)
             else:
                 self.temp_item.p_list.append([x, y])
             self.drawing = 1
@@ -188,7 +193,8 @@ class MyCanvas(QGraphicsView):
                 self.assist_item = MyItem(self.selected_id, 'polyline', self.temp_item.p_list, 'Bresenham',
                                           QColor(255, 0, 0))
                 self.scene().addItem(self.assist_item)
-                self.last_act = ['line', self.temp_id]
+                last_act = ['line', self.temp_id]
+                self.action_stack.append(last_act)
             else:
                 self.temp_item.p_list.append([x, y])
             self.drawing = 1
@@ -197,7 +203,8 @@ class MyCanvas(QGraphicsView):
                 self.temp_item = MyItem(self.temp_id, self.status, [[x, y], [x, y]],
                                         self.temp_algorithm, self.pen_color, self.pen_width)
                 self.scene().addItem(self.temp_item)
-                self.last_act = ['line', self.temp_id]
+                last_act = ['line', self.temp_id]
+                self.action_stack.append(last_act)
             else:
                 self.temp_item.p_list.append([x, y])
             self.drawing = 1
@@ -205,36 +212,42 @@ class MyCanvas(QGraphicsView):
             self.temp_item = MyItem(self.temp_id, self.status, [[x, y], [x, y]],
                                     self.temp_algorithm, self.pen_color, self.pen_width)
             self.scene().addItem(self.temp_item)
-            self.last_act = ['line', self.temp_id]
+            last_act = ['line', self.temp_id]
+            self.action_stack.append(last_act)
         elif self.status == 'ellipse':
             self.temp_item = MyItem(self.temp_id, self.status, [[x, y], [x, y]], self.temp_algorithm, self.pen_color,
                                     self.pen_width)
             self.scene().addItem(self.temp_item)
-            self.last_act = ['line', self.temp_id]
+            last_act = ['line', self.temp_id]
+            self.action_stack.append(last_act)
         elif self.status == 'translate':
             if self.selected_id != '':
                 ori_p_list = self.item_dict[self.selected_id].p_list
                 self.temp_item = MyItem(self.selected_id, self.status, [[x, y], [x, y], ori_p_list])
-                self.last_act = ["translate", self.selected_id, ori_p_list]
+                last_act = ["translate", self.selected_id, ori_p_list]
+                self.action_stack.append(last_act)
         elif self.status == 'rotate':
             if self.selected_id != '':
                 cx, cy = self.item_dict[self.selected_id].center()
                 ori_p_list = self.item_dict[self.selected_id].p_list
                 self.temp_item = MyItem(self.selected_id, self.status, [[cx, cy], [x, y], [x, y], ori_p_list])
-                self.last_act = ["translate", self.selected_id, ori_p_list]
+                last_act = ["translate", self.selected_id, ori_p_list]
+                self.action_stack.append(last_act)
         elif self.status == 'scale':
             if self.selected_id != '':
                 cx, cy = self.item_dict[self.selected_id].center()
                 ori_p_list = self.item_dict[self.selected_id].p_list
                 self.temp_item = MyItem(self.selected_id, self.status, [[cx, cy], [x, y], [x, y], ori_p_list])
-                self.last_act = ["translate", self.selected_id, ori_p_list]
+                last_act = ["translate", self.selected_id, ori_p_list]
+                self.action_stack.append(last_act)
         elif self.status == 'clip':
             if self.selected_id != '' and self.item_dict[self.selected_id].item_type == 'line':
                 self.assist_item = MyItem(self.selected_id, self.status, [[x, y], [x, y]], self.temp_algorithm,
                                           QColor(255, 0, 0))
                 self.scene().addItem(self.assist_item)
                 ori_p_list = self.item_dict[self.selected_id].p_list
-                self.last_act = ["translate", self.selected_id, ori_p_list]
+                last_act = ["translate", self.selected_id, ori_p_list]
+                self.action_stack.append(last_act)
         elif self.status == '':
             choose_item = self.scene().itemAt(x, y, QTransform())
             if choose_item is not None:
@@ -640,6 +653,7 @@ class MainWindow(QMainWindow):
                 self.canvas_widget.scene().removeItem(item)
             self.list_widget.currentTextChanged.connect(self.canvas_widget.selection_changed)
             self.item_cnt = 0
+            self.canvas_widget.action_stack = []
             self.canvas_widget.temp_id = self.get_id()
             # 更改画布大小
             self.scene.setSceneRect(0, 0, num1, num2)
