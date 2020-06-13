@@ -35,6 +35,7 @@ class MyCanvas(QGraphicsView):
         self.item_dict = {}
         self.selected_id = ''
 
+        self.last_act = None
         self.status = ''
         self.drawing = 0
         self.temp_algorithm = ''
@@ -102,17 +103,39 @@ class MyCanvas(QGraphicsView):
             self.status = 'scale'
             self.temp_algorithm = algorithm
 
-    def start_delete(self):
-        if self.drawing == 0 and self.selected_id != '':
-            self.scene().removeItem(self.item_dict[self.selected_id])
-            self.updateScene([self.sceneRect()])
-
     def start_clip(self, algorithm):
         if self.drawing == 0 and self.selected_id != '':
             self.status = 'clip'
             self.temp_algorithm = algorithm
 
-    # mark
+    def start_delete(self):
+        if self.drawing == 0 and self.selected_id != '':
+            self.last_act = ['delete', self.selected_id]
+            self.scene().removeItem(self.item_dict[self.selected_id])
+            # self.list_widget.takeItem(int(self.selected_id))
+            self.updateScene([self.sceneRect()])
+
+    def start_undo(self):
+        if self.last_act:
+            if self.last_act[0] == "translate" or self.last_act[0] == "scale" or self.last_act[0] == "rotate" or \
+                    self.last_act[0] == "clip":
+                last_id, last_p_list = self.last_act[1], self.last_act[2]
+                last_item = self.item_dict[last_id]
+                # self.scene().removeItem(self.item_dict[last_id])
+                last_item.p_list = last_p_list
+                self.updateScene([self.sceneRect()])
+            elif self.last_act[0] == "delete":
+                last_id = self.last_act[1]
+                self.scene().addItem(self.item_dict[last_id])
+                self.updateScene([self.sceneRect()])
+            elif self.last_act[0] == "line" or self.last_act[0] == "polygon" or self.last_act[0] == "polyline" or \
+                    self.last_act[0] == "curve" or self.last_act[0] == "pencil" or self.last_act[0] == "ellipse":
+                last_id = self.last_act[1]
+                self.scene().removeItem(self.item_dict[last_id])
+                self.list_widget.takeItem(int(last_id))
+                self.main_window.delete_id()
+                self.temp_id = str(int(self.temp_id) - 1)
+        # mark
 
     def finish_draw(self):
         self.temp_id = self.main_window.get_id()
@@ -147,11 +170,13 @@ class MyCanvas(QGraphicsView):
             self.temp_item = MyItem(self.temp_id, self.status, [[x, y], [x, y]], self.temp_algorithm, self.pen_color,
                                     self.pen_width)
             self.scene().addItem(self.temp_item)
+            self.last_act = ['line', self.temp_id]
         elif self.status == 'polygon':
             if self.temp_item is None:
                 self.temp_item = MyItem(self.temp_id, self.status, [[x, y], [x, y]],
                                         self.temp_algorithm, self.pen_color, self.pen_width, 0)
                 self.scene().addItem(self.temp_item)
+                self.last_act = ['polygon', self.temp_id]
             else:
                 self.temp_item.p_list.append([x, y])
             self.drawing = 1
@@ -163,6 +188,7 @@ class MyCanvas(QGraphicsView):
                 self.assist_item = MyItem(self.selected_id, 'polyline', self.temp_item.p_list, 'Bresenham',
                                           QColor(255, 0, 0))
                 self.scene().addItem(self.assist_item)
+                self.last_act = ['line', self.temp_id]
             else:
                 self.temp_item.p_list.append([x, y])
             self.drawing = 1
@@ -171,6 +197,7 @@ class MyCanvas(QGraphicsView):
                 self.temp_item = MyItem(self.temp_id, self.status, [[x, y], [x, y]],
                                         self.temp_algorithm, self.pen_color, self.pen_width)
                 self.scene().addItem(self.temp_item)
+                self.last_act = ['line', self.temp_id]
             else:
                 self.temp_item.p_list.append([x, y])
             self.drawing = 1
@@ -178,29 +205,36 @@ class MyCanvas(QGraphicsView):
             self.temp_item = MyItem(self.temp_id, self.status, [[x, y], [x, y]],
                                     self.temp_algorithm, self.pen_color, self.pen_width)
             self.scene().addItem(self.temp_item)
+            self.last_act = ['line', self.temp_id]
         elif self.status == 'ellipse':
             self.temp_item = MyItem(self.temp_id, self.status, [[x, y], [x, y]], self.temp_algorithm, self.pen_color,
                                     self.pen_width)
             self.scene().addItem(self.temp_item)
+            self.last_act = ['line', self.temp_id]
         elif self.status == 'translate':
             if self.selected_id != '':
                 ori_p_list = self.item_dict[self.selected_id].p_list
                 self.temp_item = MyItem(self.selected_id, self.status, [[x, y], [x, y], ori_p_list])
+                self.last_act = ["translate", self.selected_id, ori_p_list]
         elif self.status == 'rotate':
             if self.selected_id != '':
                 cx, cy = self.item_dict[self.selected_id].center()
                 ori_p_list = self.item_dict[self.selected_id].p_list
                 self.temp_item = MyItem(self.selected_id, self.status, [[cx, cy], [x, y], [x, y], ori_p_list])
+                self.last_act = ["translate", self.selected_id, ori_p_list]
         elif self.status == 'scale':
             if self.selected_id != '':
                 cx, cy = self.item_dict[self.selected_id].center()
                 ori_p_list = self.item_dict[self.selected_id].p_list
                 self.temp_item = MyItem(self.selected_id, self.status, [[cx, cy], [x, y], [x, y], ori_p_list])
+                self.last_act = ["translate", self.selected_id, ori_p_list]
         elif self.status == 'clip':
             if self.selected_id != '' and self.item_dict[self.selected_id].item_type == 'line':
                 self.assist_item = MyItem(self.selected_id, self.status, [[x, y], [x, y]], self.temp_algorithm,
                                           QColor(255, 0, 0))
                 self.scene().addItem(self.assist_item)
+                ori_p_list = self.item_dict[self.selected_id].p_list
+                self.last_act = ["translate", self.selected_id, ori_p_list]
         elif self.status == '':
             choose_item = self.scene().itemAt(x, y, QTransform())
             if choose_item is not None:
@@ -305,7 +339,7 @@ class MyCanvas(QGraphicsView):
             threshold = 10
             if abs(self.temp_item.p_list[-1][0] - self.temp_item.p_list[0][0]) + abs(
                     self.temp_item.p_list[-1][0] - self.temp_item.p_list[0][0]) <= threshold and len(
-                self.temp_item.p_list) > 2:
+                    self.temp_item.p_list) > 2:
                 self.temp_item.p_list[-1] = self.temp_item.p_list[0]
                 self.temp_item.end = 1
                 self.item_dict[self.temp_id] = self.temp_item
@@ -511,6 +545,7 @@ class MainWindow(QMainWindow):
         clip_liang_barsky_act = clip_menu.addAction('Liang-Barsky')
         delete_act = edit_menu.addAction('删除')
         choose_act = menubar.addAction('鼠标选中')
+        undo_act = menubar.addAction('撤销')
 
         # 连接信号和槽函数 mark
         # set_pen_act.triggered.connect(self.set_pen_color_action)
@@ -518,6 +553,7 @@ class MainWindow(QMainWindow):
         set_pen_width_act.triggered.connect(self.set_pen_width_action)
         reset_canvas_act.triggered.connect(self.reset_canvas_action)
         save_canvas_act.triggered.connect(self.save_canvas_action)
+        undo_act.triggered.connect(self.undo_action)
         exit_act.triggered.connect(qApp.quit)
         pencil_act.triggered.connect(self.pencil_action)
         line_naive_act.triggered.connect(self.line_naive_action)
@@ -555,6 +591,15 @@ class MainWindow(QMainWindow):
         self.item_cnt += 1
         return _id
 
+    def delete_id(self):
+        self.item_cnt -= 1
+
+    def undo_action(self):
+        if self.canvas_widget.drawing != 0:
+            return
+        self.canvas_widget.start_undo()
+        self.statusBar().showMessage('撤销')
+
     def set_pen_color_action(self):
         if self.canvas_widget.drawing != 0:
             return
@@ -578,7 +623,8 @@ class MainWindow(QMainWindow):
         if self.canvas_widget.drawing != 0:
             return
         num1, ok1 = QInputDialog.getInt(self, '获取宽度', '输入您的宽度(100～1000)', 600, 100, 1000, 1)
-        num2, ok2 = QInputDialog.getInt(self, '获取高度', '输入您的高度(100～1000)', 600, 100, 1000, 1)
+        if ok1:
+            num2, ok2 = QInputDialog.getInt(self, '获取高度', '输入您的高度(100～1000)', 600, 100, 1000, 1)
         if ok1 and ok2:
             # 清空画布
             # print(1)
@@ -589,11 +635,12 @@ class MainWindow(QMainWindow):
                 self.canvas_widget.finish_draw()
             self.list_widget.disconnect()
             self.list_widget.clear()
-            self.canvas_widget.scene().clear()
+            # self.canvas_widget.scene().clear()
+            for item in self.canvas_widget.scene().items():
+                self.canvas_widget.scene().removeItem(item)
             self.list_widget.currentTextChanged.connect(self.canvas_widget.selection_changed)
             self.item_cnt = 0
             self.canvas_widget.temp_id = self.get_id()
-            # print(2)
             # 更改画布大小
             self.scene.setSceneRect(0, 0, num1, num2)
             self.canvas_widget.setFixedSize(num1 + 10, num2 + 10)
