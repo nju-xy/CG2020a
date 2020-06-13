@@ -108,6 +108,20 @@ class MyCanvas(QGraphicsView):
             self.status = 'clip'
             self.temp_algorithm = algorithm
 
+    def start_copy(self):
+        if self.drawing == 0 and self.selected_id != '':
+            last_act = ['copy', self.temp_id]
+            self.action_stack.append(last_act)
+            copied_item = self.item_dict[self.selected_id]
+            new_p_list = [[x + 20, y + 20] for [x, y] in copied_item.p_list]
+            self.temp_item = MyItem(self.temp_id, copied_item.item_type, new_p_list, copied_item.algorithm,
+                                    copied_item.item_color, copied_item.pen_width)
+            self.item_dict[self.temp_id] = self.temp_item
+            self.scene().addItem(self.item_dict[self.temp_id])
+            self.list_widget.addItem(self.temp_id)
+            self.finish_draw()
+            self.updateScene([self.sceneRect()])
+
     def start_delete(self):
         if self.drawing == 0 and self.selected_id != '':
             last_act = ['delete', self.selected_id]
@@ -132,7 +146,8 @@ class MyCanvas(QGraphicsView):
                 self.scene().addItem(self.item_dict[last_id])
                 self.updateScene([self.sceneRect()])
             elif last_act[0] == "line" or last_act[0] == "polygon" or last_act[0] == "polyline" or \
-                    last_act[0] == "curve" or last_act[0] == "pencil" or last_act[0] == "ellipse":
+                    last_act[0] == "curve" or last_act[0] == "pencil" or last_act[0] == "ellipse" or \
+                    last_act[0] == "copy":
                 last_id = last_act[1]
                 self.scene().removeItem(self.item_dict[last_id])
                 self.list_widget.takeItem(int(last_id))
@@ -152,17 +167,17 @@ class MyCanvas(QGraphicsView):
             self.selected_id = ''
 
     def selection_changed(self, selected):
-        # print('selection_changed(', self.selected_id, ')end')
         if self.drawing != 0:
             return
         self.main_window.statusBar().showMessage('图元选择： %s' % selected)
         if self.selected_id != '':
             self.item_dict[self.selected_id].selected = False
             self.item_dict[self.selected_id].update()
-        self.selected_id = selected
-        self.item_dict[selected].selected = True
-        self.item_dict[selected].update()
-        self.status = ''
+        if selected in self.item_dict:
+            self.selected_id = selected
+            self.item_dict[selected].selected = True
+            self.item_dict[selected].update()
+            self.status = ''
         self.updateScene([self.sceneRect()])
 
     def mousePressEvent(self, event: QMouseEvent) -> None:  # mark
@@ -251,8 +266,6 @@ class MyCanvas(QGraphicsView):
         elif self.status == '':
             choose_item = self.scene().itemAt(x, y, QTransform())
             if choose_item is not None:
-                # print(choose_item.id)
-                self.selection_changed(choose_item.id)
                 self.list_widget.setCurrentRow(int(choose_item.id))
         self.updateScene([self.sceneRect()])
         super().mousePressEvent(event)
@@ -352,7 +365,7 @@ class MyCanvas(QGraphicsView):
             threshold = 10
             if abs(self.temp_item.p_list[-1][0] - self.temp_item.p_list[0][0]) + abs(
                     self.temp_item.p_list[-1][0] - self.temp_item.p_list[0][0]) <= threshold and len(
-                    self.temp_item.p_list) > 2:
+                self.temp_item.p_list) > 2:
                 self.temp_item.p_list[-1] = self.temp_item.p_list[0]
                 self.temp_item.end = 1
                 self.item_dict[self.temp_id] = self.temp_item
@@ -444,7 +457,7 @@ class MyItem(QGraphicsItem):
                 painter.drawRect(self.boundingRect())
 
     def boundingRect(self) -> QRectF:  # mark
-        if self.p_list == []:
+        if len(self.p_list) == 0:
             return QRectF(0, 0, 0, 0)
         if self.item_type == 'line' or self.item_type == 'ellipse' or self.item_type == 'clip':
             x0, y0 = self.p_list[0]
@@ -466,7 +479,7 @@ class MyItem(QGraphicsItem):
             return QRectF(x_min - 1, y_min - 1, x_max - x_min + 2, y_max - y_min + 2)
 
     def center(self):
-        if self.p_list == []:
+        if len(self.p_list) == 0:
             return [0, 0]
         if self.item_type == 'line' or self.item_type == 'ellipse':
             x0, y0 = self.p_list[0]
@@ -556,6 +569,7 @@ class MainWindow(QMainWindow):
         clip_menu = edit_menu.addMenu('裁剪')
         clip_cohen_sutherland_act = clip_menu.addAction('Cohen-Sutherland')
         clip_liang_barsky_act = clip_menu.addAction('Liang-Barsky')
+        copy_act = edit_menu.addAction('复制粘贴')
         delete_act = edit_menu.addAction('删除')
         choose_act = menubar.addAction('鼠标选中')
         undo_act = menubar.addAction('撤销')
@@ -582,6 +596,7 @@ class MainWindow(QMainWindow):
         translate_act.triggered.connect(self.translate_action)
         rotate_act.triggered.connect(self.rotate_action)
         scale_act.triggered.connect(self.scale_action)
+        copy_act.triggered.connect(self.copy_action)
         delete_act.triggered.connect(self.delete_action)
         clip_liang_barsky_act.triggered.connect(self.clip_liang_barsky_action)
         clip_cohen_sutherland_act.triggered.connect(self.clip_cohen_sutherland_action)
@@ -759,6 +774,12 @@ class MainWindow(QMainWindow):
         self.statusBar().showMessage('绘制B-spline曲线')
         self.list_widget.clearSelection()
         self.canvas_widget.clear_selection()
+
+    def copy_action(self):
+        if self.canvas_widget.drawing != 0:
+            return
+        self.canvas_widget.start_copy()
+        self.statusBar().showMessage('复制粘贴')
 
     def translate_action(self):
         if self.canvas_widget.drawing != 0:
