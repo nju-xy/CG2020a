@@ -531,7 +531,7 @@ class MainWindow(QMainWindow):
         self.scene = QGraphicsScene(self)
         self.scene.setSceneRect(0, 0, 600, 600)
         self.canvas_widget = MyCanvas(self.scene, self)
-        self.canvas_widget.setFixedSize(600 + 10, 600 + 10)
+        self.canvas_widget.setFixedSize(600 + 2, 600 + 2)
         self.canvas_widget.main_window = self
         self.canvas_widget.list_widget = self.list_widget
         self.canvas_widget.temp_id = self.get_id()
@@ -655,24 +655,15 @@ class MainWindow(QMainWindow):
             num2, ok2 = QInputDialog.getInt(self, '获取高度', '输入您的高度(100～1000)', 600, 100, 1000, 1)
         if ok1 and ok2:
             # 清空画布
-            # print(1)
-            # self.list_widget.clearSelection()
-            # self.canvas_widget.clear_selection()
-            # self.canvas_widget.scene().clear()
-            if self.canvas_widget.status != '':
-                self.canvas_widget.finish_draw()
-            self.list_widget.disconnect()
             self.list_widget.clear()
-            # self.canvas_widget.scene().clear()
-            for item in self.canvas_widget.scene().items():
-                self.canvas_widget.scene().removeItem(item)
-            self.list_widget.currentTextChanged.connect(self.canvas_widget.selection_changed)
             self.item_cnt = 0
             self.canvas_widget.action_stack = []
             self.canvas_widget.temp_id = self.get_id()
             # 更改画布大小
+            self.scene = QGraphicsScene(self)
             self.scene.setSceneRect(0, 0, num1, num2)
-            self.canvas_widget.setFixedSize(num1 + 10, num2 + 10)
+            self.canvas_widget.setScene(self.scene)
+            self.canvas_widget.setFixedSize(num1 + 2, num2 + 2)
 
     def save_canvas_action(self):
         if self.canvas_widget.drawing != 0:

@@ -205,7 +205,7 @@ if __name__ == '__main__':
                     print("第", lineno, "行错误：禁止对线段以外的图元进行裁剪")
                 else:
                     p_list = item_dict[item_id][1]
-                    ret = alg.clip(p_list, x0, y0, x1, y1, algorithm)
+                    ret = alg.clip(p_list, x0, min(y0, y1), x1, max(y0, y1), algorithm)
                     if ret:
                         item_dict[item_id][1] = ret
                     else:
